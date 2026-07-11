@@ -3,399 +3,307 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin System - ระบบจัดการข้อสอบ</title>
+    <title>ระบบทดสอบและจัดการข้อสอบ</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --secondary: #10b981;
-            --bg-color: #f1f5f9;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --bg-color: #f8fafc;
             --card-bg: #ffffff;
             --text-main: #1e293b;
             --text-muted: #64748b;
-            --danger: #ef4444;
             --border: #e2e8f0;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Prompt', sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 900px;
-            background: var(--card-bg);
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            padding: 40px;
-            margin: 20px;
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Prompt', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; padding: 40px 20px; min-height: 100vh; }
+        .container { width: 100%; max-width: 800px; background: var(--card-bg); border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 40px; position: relative; }
+        
+        h1, h2 { color: var(--primary); margin-bottom: 20px; text-align: center; }
+        p { color: var(--text-muted); margin-bottom: 20px; text-align: center; }
+        
         /* Views */
-        .view-section {
-            display: none;
-            animation: fadeIn 0.4s ease;
-        }
-
-        .view-section.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Typography */
-        h1, h2 {
-            color: var(--primary);
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        h3 {
-            color: var(--text-main);
-            margin-bottom: 10px;
-        }
-
-        p {
-            color: var(--text-muted);
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        /* Forms */
-        .input-field {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 16px;
-            margin-bottom: 20px;
-            transition: border-color 0.2s;
-        }
-
-        .input-field:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
+        .view-section { display: none; animation: fadeIn 0.4s ease; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* Buttons */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-            width: 100%;
-        }
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; }
+        .btn-primary { background-color: var(--primary); color: white; width: 100%; }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        .btn-outline { background-color: white; color: var(--primary); border: 2px solid var(--primary); width: 100%; margin-bottom: 10px; }
+        .btn-outline:hover { background-color: #eff6ff; }
+        .btn-success { background-color: var(--success); color: white; }
 
-        .btn-primary {
-            background-color: var(--primary);
-            color: white;
-        }
+        /* Admin Setup */
+        .secret-admin-trigger { position: absolute; bottom: 10px; right: 10px; opacity: 0.1; cursor: pointer; font-size: 20px; user-select: none; transition: opacity 0.3s; }
+        .secret-admin-trigger:hover { opacity: 0.5; }
+        textarea { width: 100%; padding: 15px; border: 2px solid var(--border); border-radius: 8px; font-size: 14px; min-height: 150px; margin-bottom: 15px; resize: vertical; }
+        textarea:focus { outline: none; border-color: var(--primary); }
+        .prompt-result-box { background: #1e293b; color: #10b981; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 14px; white-space: pre-wrap; display: none; margin-bottom: 15px; }
 
-        .btn-primary:hover {
-            background-color: var(--primary-hover);
-        }
-
-        .btn-danger {
-            background-color: var(--danger);
-            color: white;
-            width: auto;
-            padding: 8px 16px;
-            font-size: 14px;
-        }
-
-        /* Admin UI */
-        .header-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--border);
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .username-display {
-            font-weight: 600;
-            color: var(--secondary);
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text-main);
-        }
-
-        textarea {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 16px;
-            resize: vertical;
-            min-height: 120px;
-            transition: border-color 0.2s;
-        }
-
-        textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .admin-panel {
-            background: #f8fafc;
-            border: 1px solid var(--border);
-            padding: 25px;
-            border-radius: 12px;
-        }
-
-        .status-box {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
-            background: #e0f2fe;
-            color: #0284c7;
-            display: none;
-            font-size: 14px;
-            border-left: 4px solid #0284c7;
-        }
-
-        /* Regular User UI */
-        .user-alert {
-            background: #fee2e2;
-            color: #991b1b;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            border: 1px solid #fca5a5;
-            margin-bottom: 20px;
-        }
-
-        /* Login Box constraints */
-        .login-box {
-            max-width: 400px;
-            margin: 0 auto;
-        }
+        /* Quiz UI */
+        .mode-selector { display: flex; gap: 10px; margin-bottom: 30px; }
+        .question-card { border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .options-list { list-style: none; margin-top: 15px; }
+        .option-item { background: #f1f5f9; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
+        .option-item:hover { background: #e2e8f0; }
+        .option-item.selected { border-color: var(--primary); background: #eff6ff; }
+        .option-item.correct { border-color: var(--success); background: #dcfce7; color: #166534; }
+        .option-item.wrong { border-color: var(--danger); background: #fee2e2; color: #991b1b; }
+        .explanation-box { margin-top: 15px; padding: 15px; border-radius: 8px; background: #f8fafc; border-left: 4px solid var(--primary); display: none; }
+        
+        .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     
-    <div id="login-view" class="view-section active">
-        <div class="login-box">
-            <h1>ระบบจัดการข้อสอบ</h1>
-            <p>กรุณากรอกชื่อผู้ใช้งานเพื่อเข้าสู่ระบบ</p>
-            
-            <input type="text" id="username-input" class="input-field" placeholder="ชื่อผู้ใช้งาน (เช่น admin33)..." autocomplete="off">
-            <button id="login-btn" class="btn btn-primary">เข้าสู่ระบบ</button>
+    <div class="secret-admin-trigger" onclick="toggleAdminMode()" title="Staff Only">⚙️</div>
+
+    <div id="view-user-setup" class="view-section active">
+        <h1>ระบบทดสอบความรู้</h1>
+        <p>กรุณาเลือกรูปแบบการแสดงเฉลยที่คุณต้องการ</p>
+        
+        <div style="max-width: 400px; margin: 0 auto;">
+            <button class="btn btn-outline" onclick="startQuiz('immediate')">
+                ✅ ดูเฉลยทีละข้อ (ฝึกทำ)
+            </button>
+            <button class="btn btn-outline" onclick="startQuiz('batch')">
+                📊 ดูเฉลยตอนจบทีเดียว (จำลองสอบจริง)
+            </button>
         </div>
     </div>
 
-    <div id="admin-view" class="view-section">
+    <div id="view-quiz" class="view-section">
         <div class="header-bar">
-            <div>
-                <h2>Admin Dashboard</h2>
-                <div class="user-info">
-                    <span>ผู้ใช้งาน: </span>
-                    <span id="admin-username" class="username-display"></span>
-                </div>
-            </div>
-            <button id="admin-logout-btn" class="btn btn-danger">ออกจากระบบ</button>
+            <h3 id="quiz-title">กำลังทำข้อสอบ...</h3>
+            <button class="btn" style="background: var(--border); color: var(--text-main); padding: 5px 10px;" onclick="location.reload()">ออก</button>
         </div>
+        
+        <div id="quiz-container">
+            </div>
 
-        <div class="admin-panel">
-            <h3>🤖 เครื่องมือสร้างข้อสอบด้วย AI</h3>
-            <p style="text-align: left; margin-bottom: 20px;">
-                พิมพ์คำสั่ง (Prompt) ที่คุณต้องการให้ AI สร้างข้อสอบ เช่น จำนวนข้อ, วิชา, เนื้อหาที่ต้องการเน้น
-            </p>
-            
-            <div class="form-group">
-                <label for="ai-prompt">AI Prompt:</label>
-                <textarea id="ai-prompt" placeholder="ตัวอย่าง: สร้างข้อสอบวิชาปิโตรเลียม บทที่ 1 จำนวน 10 ข้อ แบบ 4 ตัวเลือก พร้อมเฉลยและคำอธิบาย ในรูปแบบ JSON..."></textarea>
-            </div>
-            
-            <button id="generate-btn" class="btn btn-primary">ส่งคำสั่งให้ AI สร้างข้อสอบ</button>
-            
-            <div id="system-status" class="status-box"></div>
-        </div>
+        <button id="submit-quiz-btn" class="btn btn-primary" style="display: none;" onclick="submitBatchQuiz()">ส่งคำตอบและดูผลลัพธ์</button>
     </div>
 
-    <div id="user-view" class="view-section">
+    <div id="view-admin" class="view-section">
         <div class="header-bar">
-            <div>
-                <h2>ระบบทำข้อสอบ</h2>
-                <div class="user-info">
-                    <span>ผู้ใช้งาน: </span>
-                    <span id="user-username" class="username-display"></span>
-                </div>
-            </div>
-            <button id="user-logout-btn" class="btn btn-danger">ออกจากระบบ</button>
+            <h2>🛠️ เครื่องมือแอดมิน (Prompt Generator)</h2>
+            <button class="btn" style="background: var(--border); padding: 5px 10px;" onclick="location.reload()">ปิด</button>
         </div>
 
-        <div class="user-alert">
-            <h3>🚫 ไม่ได้รับอนุญาต</h3>
-            <p style="margin-bottom: 0;">บัญชีของคุณไม่มีสิทธิ์ในการเข้าถึงระบบจัดการข้อสอบ (Admin Only)</p>
-        </div>
+        <p style="text-align: left; margin-bottom: 10px;">
+            <strong>พิมพ์ข้อสอบแบบย่อ:</strong> โครงสร้าง `ข้อ. คำถาม /a= /b= /c= /d= _<answer/คำตอบ[คำอธิบาย]`
+        </p>
+        
+        <textarea id="shorthand-input" placeholder="ตัวอย่าง:
+1. who .... you /a=is /b=are /c=were /d=was _<answer/b[because you using with are]
+2. ..."></textarea>
+
+        <button class="btn btn-primary" onclick="generatePrompt()">1. สร้าง Prompt สำหรับ AI</button>
+
+        <div id="generated-prompt" class="prompt-result-box"></div>
+        <button id="copy-btn" class="btn btn-success" style="display: none; width: 100%; margin-top: 10px;" onclick="copyPrompt()">2. คัดลอก Prompt</button>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid var(--border);">
+        <h3 style="font-size: 16px; color: var(--text-muted);">คำแนะนำ: นำ Prompt ที่คัดลอกได้ ไปวางใน ChatGPT หรือ Gemini เพื่อให้ AI สร้างโค้ดข้อสอบ หรือทำระบบวิเคราะห์กราฟให้ครับ</h3>
     </div>
 
 </div>
 
-<script type="module">
-  // Import Firebase App และ Firestore
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<script>
+    // ==========================================
+    // ส่วนที่ 1: ระบบแอดมิน (สร้าง Prompt)
+    // ==========================================
+    
+    // ซ่อน/แสดง โหมดแอดมิน (เช็คผ่าน Prompt ปกติ ไม่ต้อง Login ให้วุ่นวาย)
+    function toggleAdminMode() {
+        const passcode = prompt("กรุณาใส่รหัสผ่านแอดมิน (ลองพิมพ์ admin33):");
+        if (passcode === "admin33") {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById('view-admin').classList.add('active');
+        } else if (passcode !== null) {
+            alert("รหัสผ่านไม่ถูกต้อง");
+        }
+    }
 
-  // Your Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyD3oXzjvERTNaODy3rH62THjXP-BCj2ULk",
-    authDomain: "pop134-79036.firebaseapp.com",
-    projectId: "pop134-79036",
-    storageBucket: "pop134-79036.firebasestorage.app",
-    messagingSenderId: "638309590907",
-    appId: "1:638309590907:web:724909a0adba130f307fde"
-  };
+    function generatePrompt() {
+        const rawInput = document.getElementById('shorthand-input').value.trim();
+        if (!rawInput) { alert("กรุณาใส่ข้อมูลข้อสอบก่อนครับ"); return; }
 
-  // Initialize Firebase (เฉพาะ Database)
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+        // Master Prompt ที่สั่ง AI ให้ทำงานครบตามที่คุณต้องการ
+        const masterPrompt = `คุณคือผู้เชี่ยวชาญด้านการสร้างระบบทดสอบความรู้และวิเคราะห์สถิติ
 
-  // ตัวแปรเก็บสถานะการล็อกอิน
-  let currentUsername = "";
+ฉันมีข้อมูลข้อสอบแบบย่อ (Shorthand) ด้านล่างนี้ โครงสร้างคือ: 
+[เลขข้อ]. [คำถาม] /a=[ตัวเลือก] /b=[ตัวเลือก] /c=[ตัวเลือก] /d=[ตัวเลือก] _<answer/[ตัวเลือกที่ถูก][คำอธิบายเมื่อตอบผิดหรือถูก]
 
-  // UI Elements
-  const viewLogin = document.getElementById('login-view');
-  const viewAdmin = document.getElementById('admin-view');
-  const viewUser = document.getElementById('user-view');
-  const statusBox = document.getElementById('system-status');
+**สิ่งที่คุณต้องทำ:**
+1. แปลงข้อมูลย่อนี้ให้เป็นโครงสร้าง JSON Array หรือ HTML/JS ที่พร้อมนำไปใช้งานในระบบเว็บ
+2. **การจัดหมวดหมู่ (Parts):** ให้วิเคราะห์คำถามแต่ละข้อและจัดหมวดหมู่ (Tag/Part) ให้โดยอัตโนมัติ (เช่น Part: Grammar, Part: Vocabulary)
+3. **ระบบวิเคราะห์จุดอ่อน (Analytics):** เพิ่มฟังก์ชันหรือคำสั่งลงในระบบ เพื่อให้เมื่อผู้ใช้ทำข้อสอบเสร็จ ระบบจะ:
+   - สรุปว่าผู้ใช้ทำผิดใน Part ไหนมากที่สุด
+   - อธิบายว่าทำไมถึงผิด และให้คำแนะนำในการปรับปรุง
+   - **แสดงผลลัพธ์เป็นกราฟแท่ง (Bar Chart) หรือกราฟเรดาร์ (Radar Chart)** เพื่อเปรียบเทียบสถิติความเข้าใจในแต่ละ Part ให้เห็นภาพชัดเจน
 
-  // Function: Switch Views
-  function showView(viewElement) {
-      document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-      viewElement.classList.add('active');
-  }
+**ข้อมูลข้อสอบแบบย่อ:**
+${rawInput}
 
-  // Action: เข้าสู่ระบบ
-  document.getElementById('login-btn').addEventListener('click', () => {
-      const usernameInput = document.getElementById('username-input').value.trim();
-      
-      if (!usernameInput) {
-          alert("กรุณากรอกชื่อผู้ใช้งาน");
-          return;
-      }
+กรุณาสร้างโค้ดและคำอธิบายระบบมาให้สมบูรณ์ครับ`;
 
-      currentUsername = usernameInput;
+        const resultBox = document.getElementById('generated-prompt');
+        resultBox.textContent = masterPrompt;
+        resultBox.style.display = "block";
+        document.getElementById('copy-btn').style.display = "block";
+    }
 
-      // เช็คว่าเป็น Admin หรือไม่
-      if (currentUsername === "admin33") {
-          document.getElementById('admin-username').innerText = currentUsername;
-          showView(viewAdmin);
-      } else {
-          // ถ้าไม่ใช่ admin33 จะถือว่าเป็น User ปกติ
-          document.getElementById('user-username').innerText = currentUsername;
-          showView(viewUser);
-      }
-  });
+    function copyPrompt() {
+        const textToCopy = document.getElementById('generated-prompt').textContent;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            const btn = document.getElementById('copy-btn');
+            btn.innerText = "✅ คัดลอกสำเร็จ! นำไปวางใน AI ได้เลย";
+            setTimeout(() => btn.innerText = "2. คัดลอก Prompt", 3000);
+        });
+    }
 
-  // รองรับการกด Enter เพื่อล็อกอิน
-  document.getElementById('username-input').addEventListener('keypress', function (e) {
-      if (e.key === 'Enter') {
-          document.getElementById('login-btn').click();
-      }
-  });
+    // ==========================================
+    // ส่วนที่ 2: ระบบจำลองทำข้อสอบ (User UI)
+    // ==========================================
+    
+    let currentMode = 'immediate'; // 'immediate' หรือ 'batch'
+    
+    // ตัวอย่างข้อสอบจำลอง
+    const mockQuestions = [
+        {
+            q: "Who ____ you?",
+            options: { a: "is", b: "are", c: "were", d: "was" },
+            ans: "b",
+            exp: "เพราะ you เป็นพหูพจน์ ต้องใช้คู่กับ are (Who are you? = คุณคือใคร)"
+        },
+        {
+            q: "He ____ a good student.",
+            options: { a: "is", b: "am", c: "are", d: "be" },
+            ans: "a",
+            exp: "ประธาน He เป็นเอกพจน์บุรุษที่ 3 ต้องใช้ is"
+        }
+    ];
 
-  // Action: ออกจากระบบ
-  const handleLogout = () => {
-      currentUsername = "";
-      document.getElementById('username-input').value = ""; // ล้างค่าในช่องกรอก
-      statusBox.style.display = "none"; // ซ่อนกล่องข้อความแจ้งเตือน
-      showView(viewLogin);
-  };
-  
-  document.getElementById('admin-logout-btn').addEventListener('click', handleLogout);
-  document.getElementById('user-logout-btn').addEventListener('click', handleLogout);
+    function startQuiz(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+        document.getElementById('view-quiz').classList.add('active');
+        renderQuiz();
+    }
 
-  // Action: จำลองการกดปุ่มสร้างข้อสอบและบันทึกลง Database
-  document.getElementById('generate-btn').addEventListener('click', async () => {
-      const promptText = document.getElementById('ai-prompt').value;
-      
-      if(!promptText.trim()) {
-          alert("กรุณาใส่คำสั่ง (Prompt) ก่อนครับ");
-          return;
-      }
+    function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        container.innerHTML = ''; // Clear old
 
-      const btn = document.getElementById('generate-btn');
-      btn.innerText = "กำลังประมวลผล...";
-      btn.disabled = true;
-      statusBox.style.display = "none";
+        mockQuestions.forEach((item, index) => {
+            const qDiv = document.createElement('div');
+            qDiv.className = 'question-card';
+            
+            // สร้างคำถาม
+            let html = `<h4>ข้อ ${index + 1}. ${item.q}</h4><ul class="options-list">`;
+            
+            // สร้างตัวเลือก
+            for (const [key, value] of Object.entries(item.options)) {
+                html += `<li class="option-item" onclick="selectOption(${index}, '${key}', this)">
+                            ${key.toUpperCase()}. ${value}
+                         </li>`;
+            }
+            html += `</ul>`;
+            
+            // สร้างกล่องเฉลย (ซ่อนไว้ก่อน)
+            html += `<div class="explanation-box" id="exp-${index}">
+                        <strong>คำตอบที่ถูกคือ: ${item.ans.toUpperCase()}</strong><br>
+                        คำอธิบาย: ${item.exp}
+                     </div>`;
+                     
+            qDiv.innerHTML = html;
+            container.appendChild(qDiv);
+        });
 
-      try {
-          // จำลองการรอ API ตอบกลับ 1.5 วินาที
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          
-          // บันทึก Log การใช้งานลง Firestore
-          await addDoc(collection(db, "admin_logs"), {
-              username: currentUsername,
-              action: "GENERATE_PROMPT",
-              prompt_text: promptText,
-              timestamp: serverTimestamp()
-          });
+        // ถ้าเป็นโหมดทำเสร็จค่อยเฉลย ให้โชว์ปุ่มส่งคำตอบ
+        if (currentMode === 'batch') {
+            document.getElementById('submit-quiz-btn').style.display = "block";
+        }
+    }
 
-          // บันทึกสำเร็จ
-          statusBox.style.display = "block";
-          statusBox.style.background = "#e0f2fe";
-          statusBox.style.color = "#0284c7";
-          statusBox.style.borderLeftColor = "#0284c7";
-          statusBox.innerHTML = `<strong>✅ สำเร็จ!</strong> ระบบได้รับคำสั่งและบันทึกลงฐานข้อมูล Firestore เรียบร้อยแล้ว`;
-          
-          // ล้างช่องกรอก (ถ้าต้องการ)
-          // document.getElementById('ai-prompt').value = '';
+    // ฟังก์ชันเมื่อผู้ใช้คลิกเลือกคำตอบ
+    function selectOption(qIndex, selectedKey, element) {
+        const parentUl = element.parentElement;
+        const qData = mockQuestions[qIndex];
+        
+        // ถ้าเฉลยไปแล้ว ไม่ให้กดซ้ำ
+        if (parentUl.classList.contains('locked')) return;
 
-      } catch (error) {
-          console.error("Error saving to database: ", error);
-          statusBox.style.display = "block";
-          statusBox.style.background = "#fee2e2";
-          statusBox.style.color = "#991b1b";
-          statusBox.style.borderLeftColor = "#ef4444";
-          statusBox.innerHTML = `<strong>❌ เกิดข้อผิดพลาด:</strong> ${error.message} <br> (โปรดตรวจสอบการตั้งค่า Rules ใน Firestore)`;
-      } finally {
-          btn.innerText = "ส่งคำสั่งให้ AI สร้างข้อสอบ";
-          btn.disabled = false;
-      }
-  });
+        // ล้างสีที่เคยเลือกก่อนหน้า
+        Array.from(parentUl.children).forEach(li => li.classList.remove('selected'));
+        element.classList.add('selected');
+
+        // บันทึกคำตอบไว้ใน tag ตัวเลือก
+        parentUl.dataset.selected = selectedKey;
+
+        // ถ้าเป็นโหมด "เฉลยทันที" (immediate)
+        if (currentMode === 'immediate') {
+            parentUl.classList.add('locked'); // ล็อคไม่ให้กดเปลี่ยน
+            
+            // ตรวจคำตอบ
+            if (selectedKey === qData.ans) {
+                element.classList.add('correct');
+            } else {
+                element.classList.add('wrong');
+                // ไฮไลต์ข้อที่ถูกด้วย
+                const correctEl = Array.from(parentUl.children).find(li => li.innerText.startsWith(qData.ans.toUpperCase()));
+                if(correctEl) correctEl.classList.add('correct');
+            }
+            
+            // โชว์คำอธิบาย
+            document.getElementById(`exp-${qIndex}`).style.display = "block";
+        }
+    }
+
+    // ฟังก์ชันเมื่อกดส่งคำตอบ (สำหรับโหมด batch)
+    function submitBatchQuiz() {
+        const lists = document.querySelectorAll('.options-list');
+        let score = 0;
+
+        lists.forEach((ul, index) => {
+            const selectedKey = ul.dataset.selected;
+            const qData = mockQuestions[index];
+            
+            ul.classList.add('locked'); // ล็อคการกด
+
+            if (!selectedKey) {
+                // ถ้าไม่ตอบเลย ไฮไลต์ข้อถูกไปเลย
+                const correctEl = Array.from(ul.children).find(li => li.innerText.startsWith(qData.ans.toUpperCase()));
+                if(correctEl) correctEl.classList.add('correct');
+            } else if (selectedKey === qData.ans) {
+                // ตอบถูก
+                score++;
+                ul.querySelector('.selected').classList.add('correct');
+            } else {
+                // ตอบผิด
+                ul.querySelector('.selected').classList.add('wrong');
+                const correctEl = Array.from(ul.children).find(li => li.innerText.startsWith(qData.ans.toUpperCase()));
+                if(correctEl) correctEl.classList.add('correct');
+            }
+
+            // เปิดคำอธิบายทุกข้อ
+            document.getElementById(`exp-${index}`).style.display = "block";
+        });
+
+        // ซ่อนปุ่มส่งคำตอบ และแจ้งคะแนน
+        document.getElementById('submit-quiz-btn').style.display = "none";
+        alert(`คุณทำได้ ${score} / ${mockQuestions.length} คะแนน!`);
+    }
+
 </script>
 
 </body>
 </html>
-
