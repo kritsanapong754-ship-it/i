@@ -77,6 +77,22 @@
             text-align: center;
         }
 
+        /* Forms */
+        .input-field {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: border-color 0.2s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
         /* Buttons */
         .btn {
             display: inline-flex;
@@ -99,18 +115,6 @@
 
         .btn-primary:hover {
             background-color: var(--primary-hover);
-        }
-
-        .btn-google {
-            background-color: white;
-            color: var(--text-main);
-            border: 2px solid var(--border);
-            margin-top: 20px;
-        }
-
-        .btn-google:hover {
-            background-color: #f8fafc;
-            border-color: #cbd5e1;
         }
 
         .btn-danger {
@@ -137,7 +141,7 @@
             gap: 10px;
         }
 
-        .user-email {
+        .username-display {
             font-weight: 600;
             color: var(--secondary);
         }
@@ -198,6 +202,11 @@
             margin-bottom: 20px;
         }
 
+        /* Login Box constraints */
+        .login-box {
+            max-width: 400px;
+            margin: 0 auto;
+        }
     </style>
 </head>
 <body>
@@ -205,17 +214,13 @@
 <div class="container">
     
     <div id="login-view" class="view-section active">
-        <h1>ระบบจัดการข้อสอบ</h1>
-        <p>กรุณาเข้าสู่ระบบเพื่อดำเนินการต่อ</p>
-        <button id="login-btn" class="btn btn-google">
-            <svg style="width:20px; height:20px; margin-right:10px;" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.1H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.9l3.66-2.81z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.1l3.66 2.81c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            เข้าสู่ระบบด้วย Google
-        </button>
+        <div class="login-box">
+            <h1>ระบบจัดการข้อสอบ</h1>
+            <p>กรุณากรอกชื่อผู้ใช้งานเพื่อเข้าสู่ระบบ</p>
+            
+            <input type="text" id="username-input" class="input-field" placeholder="ชื่อผู้ใช้งาน (เช่น admin33)..." autocomplete="off">
+            <button id="login-btn" class="btn btn-primary">เข้าสู่ระบบ</button>
+        </div>
     </div>
 
     <div id="admin-view" class="view-section">
@@ -223,8 +228,8 @@
             <div>
                 <h2>Admin Dashboard</h2>
                 <div class="user-info">
-                    <span>ล็อกอินในชื่อ: </span>
-                    <span id="admin-email" class="user-email"></span>
+                    <span>ผู้ใช้งาน: </span>
+                    <span id="admin-username" class="username-display"></span>
                 </div>
             </div>
             <button id="admin-logout-btn" class="btn btn-danger">ออกจากระบบ</button>
@@ -252,8 +257,8 @@
             <div>
                 <h2>ระบบทำข้อสอบ</h2>
                 <div class="user-info">
-                    <span>ล็อกอินในชื่อ: </span>
-                    <span id="user-email" class="user-email"></span>
+                    <span>ผู้ใช้งาน: </span>
+                    <span id="user-username" class="username-display"></span>
                 </div>
             </div>
             <button id="user-logout-btn" class="btn btn-danger">ออกจากระบบ</button>
@@ -268,9 +273,8 @@
 </div>
 
 <script type="module">
-  // Import Firebase functions
+  // Import Firebase App และ Firestore
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
   import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
   // Your Firebase configuration
@@ -283,14 +287,12 @@
     appId: "1:638309590907:web:724909a0adba130f307fde"
   };
 
-  // Initialize Firebase
+  // Initialize Firebase (เฉพาะ Database)
   const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
   const db = getFirestore(app);
-  const provider = new GoogleAuthProvider();
 
-  // Admin Email
-  const ADMIN_EMAIL = "Kritsanapong0710@gmail.com";
+  // ตัวแปรเก็บสถานะการล็อกอิน
+  let currentUsername = "";
 
   // UI Elements
   const viewLogin = document.getElementById('login-view');
@@ -304,35 +306,47 @@
       viewElement.classList.add('active');
   }
 
-  // Auth State Observer
-  onAuthStateChanged(auth, (user) => {
-      if (user) {
-          if (user.email === ADMIN_EMAIL) {
-              document.getElementById('admin-email').innerText = user.email;
-              showView(viewAdmin);
-          } else {
-              document.getElementById('user-email').innerText = user.email;
-              showView(viewUser);
-          }
+  // Action: เข้าสู่ระบบ
+  document.getElementById('login-btn').addEventListener('click', () => {
+      const usernameInput = document.getElementById('username-input').value.trim();
+      
+      if (!usernameInput) {
+          alert("กรุณากรอกชื่อผู้ใช้งาน");
+          return;
+      }
+
+      currentUsername = usernameInput;
+
+      // เช็คว่าเป็น Admin หรือไม่
+      if (currentUsername === "admin33") {
+          document.getElementById('admin-username').innerText = currentUsername;
+          showView(viewAdmin);
       } else {
-          showView(viewLogin);
+          // ถ้าไม่ใช่ admin33 จะถือว่าเป็น User ปกติ
+          document.getElementById('user-username').innerText = currentUsername;
+          showView(viewUser);
       }
   });
 
-  // Login Action
-  document.getElementById('login-btn').addEventListener('click', () => {
-      signInWithPopup(auth, provider).catch((error) => {
-          console.error("Login Error:", error);
-          alert("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
-      });
+  // รองรับการกด Enter เพื่อล็อกอิน
+  document.getElementById('username-input').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+          document.getElementById('login-btn').click();
+      }
   });
 
-  // Logout Actions
-  const handleLogout = () => signOut(auth);
+  // Action: ออกจากระบบ
+  const handleLogout = () => {
+      currentUsername = "";
+      document.getElementById('username-input').value = ""; // ล้างค่าในช่องกรอก
+      statusBox.style.display = "none"; // ซ่อนกล่องข้อความแจ้งเตือน
+      showView(viewLogin);
+  };
+  
   document.getElementById('admin-logout-btn').addEventListener('click', handleLogout);
   document.getElementById('user-logout-btn').addEventListener('click', handleLogout);
 
-  // Admin Action: Generate Quiz & Save (Simulation Structure)
+  // Action: จำลองการกดปุ่มสร้างข้อสอบและบันทึกลง Database
   document.getElementById('generate-btn').addEventListener('click', async () => {
       const promptText = document.getElementById('ai-prompt').value;
       
@@ -347,30 +361,34 @@
       statusBox.style.display = "none";
 
       try {
-          // --- บริเวณนี้คือจุดที่คุณสามารถต่อ API ของ AI (เช่น OpenAI/Gemini) ในอนาคต ---
-          // จำลองการรอ API ตอบกลับ 2 วินาที
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // จำลองการรอ API ตอบกลับ 1.5 วินาที
+          await new Promise(resolve => setTimeout(resolve, 1500));
           
-          // บันทึก Log การใช้งานของ Admin ลง Firestore
+          // บันทึก Log การใช้งานลง Firestore
           await addDoc(collection(db, "admin_logs"), {
-              email: auth.currentUser.email,
+              username: currentUsername,
               action: "GENERATE_PROMPT",
               prompt_text: promptText,
               timestamp: serverTimestamp()
           });
 
-          // บันทึกสำเร็จ (นี่คือ Mockup หลังจาก AI เจนเสร็จ)
+          // บันทึกสำเร็จ
           statusBox.style.display = "block";
-          statusBox.innerHTML = `<strong>✅ สำเร็จ!</strong> ระบบได้รับคำสั่งแล้ว และบันทึกประวัติการใช้ Prompt ลงฐานข้อมูล Firestore เรียบร้อยแล้ว (คุณสามารถเช็คได้ที่ Firebase Console)`;
-          document.getElementById('ai-prompt').value = '';
+          statusBox.style.background = "#e0f2fe";
+          statusBox.style.color = "#0284c7";
+          statusBox.style.borderLeftColor = "#0284c7";
+          statusBox.innerHTML = `<strong>✅ สำเร็จ!</strong> ระบบได้รับคำสั่งและบันทึกลงฐานข้อมูล Firestore เรียบร้อยแล้ว`;
+          
+          // ล้างช่องกรอก (ถ้าต้องการ)
+          // document.getElementById('ai-prompt').value = '';
 
       } catch (error) {
-          console.error("Error adding document: ", error);
+          console.error("Error saving to database: ", error);
           statusBox.style.display = "block";
           statusBox.style.background = "#fee2e2";
           statusBox.style.color = "#991b1b";
           statusBox.style.borderLeftColor = "#ef4444";
-          statusBox.innerHTML = `<strong>❌ เกิดข้อผิดพลาด:</strong> ${error.message}`;
+          statusBox.innerHTML = `<strong>❌ เกิดข้อผิดพลาด:</strong> ${error.message} <br> (โปรดตรวจสอบการตั้งค่า Rules ใน Firestore)`;
       } finally {
           btn.innerText = "ส่งคำสั่งให้ AI สร้างข้อสอบ";
           btn.disabled = false;
@@ -380,3 +398,4 @@
 
 </body>
 </html>
+
