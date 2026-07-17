@@ -1,309 +1,1131 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบทดสอบและจัดการข้อสอบ</title>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --success: #16a34a;
-            --danger: #dc2626;
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-        }
+```react
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  User, BookOpen, CheckCircle, Plus, Trash2, Award, 
+  ArrowRight, ArrowLeft, LogOut, List, Eye, ShieldAlert, 
+  Clock, History, Save, Edit, Play, PauseCircle, BarChart3, 
+  AlertCircle, Check, Lock, Globe, TrendingUp, X, ChevronRight,
+  Trophy, ArrowUp, Crown
+} from 'lucide-react';
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Prompt', sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; padding: 40px 20px; min-height: 100vh; }
-        .container { width: 100%; max-width: 800px; background: var(--card-bg); border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 40px; position: relative; }
-        
-        h1, h2 { color: var(--primary); margin-bottom: 20px; text-align: center; }
-        p { color: var(--text-muted); margin-bottom: 20px; text-align: center; }
-        
-        /* Views */
-        .view-section { display: none; animation: fadeIn 0.4s ease; }
-        .view-section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Buttons */
-        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; }
-        .btn-primary { background-color: var(--primary); color: white; width: 100%; }
-        .btn-primary:hover { background-color: var(--primary-hover); }
-        .btn-outline { background-color: white; color: var(--primary); border: 2px solid var(--primary); width: 100%; margin-bottom: 10px; }
-        .btn-outline:hover { background-color: #eff6ff; }
-        .btn-success { background-color: var(--success); color: white; }
-
-        /* Admin Setup */
-        .secret-admin-trigger { position: absolute; bottom: 10px; right: 10px; opacity: 0.1; cursor: pointer; font-size: 20px; user-select: none; transition: opacity 0.3s; }
-        .secret-admin-trigger:hover { opacity: 0.5; }
-        textarea { width: 100%; padding: 15px; border: 2px solid var(--border); border-radius: 8px; font-size: 14px; min-height: 150px; margin-bottom: 15px; resize: vertical; }
-        textarea:focus { outline: none; border-color: var(--primary); }
-        .prompt-result-box { background: #1e293b; color: #10b981; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 14px; white-space: pre-wrap; display: none; margin-bottom: 15px; }
-
-        /* Quiz UI */
-        .mode-selector { display: flex; gap: 10px; margin-bottom: 30px; }
-        .question-card { border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        .options-list { list-style: none; margin-top: 15px; }
-        .option-item { background: #f1f5f9; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
-        .option-item:hover { background: #e2e8f0; }
-        .option-item.selected { border-color: var(--primary); background: #eff6ff; }
-        .option-item.correct { border-color: var(--success); background: #dcfce7; color: #166534; }
-        .option-item.wrong { border-color: var(--danger); background: #fee2e2; color: #991b1b; }
-        .explanation-box { margin-top: 15px; padding: 15px; border-radius: 8px; background: #f8fafc; border-left: 4px solid var(--primary); display: none; }
-        
-        .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
-    </style>
-</head>
-<body>
-
-<div class="container">
+/* =========================================
+   1. CSS Animations & Custom Styles (Inject)
+   ========================================= */
+const GlobalStyles = () => (
+  <style dangerouslySetInnerHTML={{__html: `
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f8fafc; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     
-    <div class="secret-admin-trigger" onclick="toggleAdminMode()" title="Staff Only">⚙️</div>
+    /* Smooth Scroll */
+    html { scroll-behavior: smooth; }
 
-    <div id="view-user-setup" class="view-section active">
-        <h1>ระบบทดสอบความรู้</h1>
-        <p>กรุณาเลือกรูปแบบการแสดงเฉลยที่คุณต้องการ</p>
-        
-        <div style="max-width: 400px; margin: 0 auto;">
-            <button class="btn btn-outline" onclick="startQuiz('immediate')">
-                ✅ ดูเฉลยทีละข้อ (ฝึกทำ)
-            </button>
-            <button class="btn btn-outline" onclick="startQuiz('batch')">
-                📊 ดูเฉลยตอนจบทีเดียว (จำลองสอบจริง)
-            </button>
-        </div>
-    </div>
+    /* Animations */
+    @keyframes gradient-x {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    .animate-gradient-x {
+      background-size: 200% 200%;
+      animation: gradient-x 4s ease infinite;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+    .animate-float { animation: float 3s ease-in-out infinite; }
+    
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-up { animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-    <div id="view-quiz" class="view-section">
-        <div class="header-bar">
-            <h3 id="quiz-title">กำลังทำข้อสอบ...</h3>
-            <button class="btn" style="background: var(--border); color: var(--text-main); padding: 5px 10px;" onclick="location.reload()">ออก</button>
-        </div>
-        
-        <div id="quiz-container">
+    .custom-scrollbar::-webkit-scrollbar { height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #93c5fd; }
+  `}} />
+);
+
+/* =========================================
+   2. ระบบเสียง (Web Audio API)
+   ========================================= */
+const playSound = (type) => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    osc.connect(gainNode); gainNode.connect(ctx.destination);
+
+    if (type === 'click' || type === 'next') {
+      osc.type = 'sine'; osc.frequency.setValueAtTime(600, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.1);
+      gainNode.gain.setValueAtTime(0.05, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.1);
+    } else if (type === 'success') {
+      osc.type = 'triangle'; osc.frequency.setValueAtTime(440, ctx.currentTime);
+      osc.frequency.setValueAtTime(554.37, ctx.currentTime + 0.1); osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.2); 
+      gainNode.gain.setValueAtTime(0.05, ctx.currentTime); gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
+    }
+  } catch (e) { console.error(e); }
+};
+
+/* =========================================
+   3. Main App Component
+   ========================================= */
+export default function App() {
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('PFM_USER')) || null);
+  const [quizzes, setQuizzes] = useState(() => JSON.parse(localStorage.getItem('PFM_QUIZZES')) || INITIAL_QUIZZES);
+  const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('PFM_HISTORY')) || []);
+  const [savedExam, setSavedExam] = useState(() => JSON.parse(localStorage.getItem('PFM_SAVED_EXAM')) || null);
+  
+  const [activeTab, setActiveTab] = useState('list'); 
+  const [selectedQuizId, setSelectedQuizId] = useState(null);
+  const [examConfig, setExamConfig] = useState(null);
+  const [reviewRecord, setReviewRecord] = useState(null);
+  
+  const [sessionSeconds, setSessionSeconds] = useState(0);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // --- Effects ---
+  useEffect(() => {
+    const timer = setInterval(() => setSessionSeconds(p => p + 1), 1000);
+    const handleScroll = () => setShowScrollTop(window.scrollY > 300);
+    window.addEventListener('scroll', handleScroll);
+    return () => { clearInterval(timer); window.removeEventListener('scroll', handleScroll); };
+  }, []);
+
+  useEffect(() => { localStorage.setItem('PFM_USER', JSON.stringify(user)); }, [user]);
+  useEffect(() => { localStorage.setItem('PFM_QUIZZES', JSON.stringify(quizzes)); }, [quizzes]);
+  useEffect(() => { localStorage.setItem('PFM_HISTORY', JSON.stringify(history)); }, [history]);
+  useEffect(() => { localStorage.setItem('PFM_SAVED_EXAM', JSON.stringify(savedExam)); }, [savedExam]);
+
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;900&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+  }, []);
+
+  // --- Handlers ---
+  const handleLogin = (name, requestedRole) => {
+    if (!name.trim()) return;
+    let finalRole = requestedRole;
+    if (name.trim().toLowerCase() === 'hello') finalRole = 'admin';
+    setUser({ name: name.trim(), role: finalRole });
+    setActiveTab(finalRole === 'admin' ? 'admin' : 'list');
+  };
+
+  const handleLogout = () => { setUser(null); setActiveTab('list'); setReviewRecord(null); };
+
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  const navigateTo = (tab) => { playSound('click'); setActiveTab(tab); setReviewRecord(null); scrollToTop(); };
+
+  const startExam = (quizId, mode) => {
+    playSound('click'); setSelectedQuizId(quizId); setExamConfig({ mode }); setActiveTab('exam'); scrollToTop();
+  };
+  const resumeExam = () => {
+    playSound('click'); setSelectedQuizId(savedExam.quizId); setExamConfig({ mode: savedExam.mode }); setActiveTab('exam'); scrollToTop();
+  };
+
+  // --- Quiz Management ---
+  const toggleQuizVisibility = (quizId) => {
+    playSound('click');
+    setQuizzes(quizzes.map(q => q.id === quizId ? { ...q, isPublic: !q.isPublic } : q));
+  };
+  const deleteQuiz = (quizId) => {
+    if(window.confirm('คุณต้องการลบชุดข้อสอบนี้ใช่หรือไม่?')) {
+      playSound('click'); setQuizzes(quizzes.filter(q => q.id !== quizId));
+    }
+  };
+  const handleSaveNewQuiz = (newQuiz) => {
+    setQuizzes([newQuiz, ...quizzes]); setActiveTab('list'); scrollToTop();
+  };
+
+  // --- History Management ---
+  const clearUserHistory = () => {
+    if(window.confirm('ยืนยันการลบประวัติการสอบของคุณทั้งหมด?')) {
+      playSound('click');
+      setHistory(prev => prev.filter(h => h.user !== user.name));
+      setReviewRecord(null);
+    }
+  };
+  const clearGlobalHistory = () => {
+    if(window.confirm('ยืนยันล้างประวัติผู้ใช้งานทั้งหมดในระบบ? (ไม่สามารถกู้คืนได้)')) {
+      playSound('click'); setHistory([]);
+    }
+  };
+
+  const formatTime = (secs) => {
+    const h = Math.floor(secs / 3600); const m = Math.floor((secs % 3600) / 60); const s = secs % 60;
+    return `${h > 0 ? h + 'h ' : ''}${m}m ${s}s`;
+  };
+
+  return (
+    <div style={{ fontFamily: "'Kanit', sans-serif" }} className="min-h-screen bg-slate-50 text-slate-800 flex flex-col selection:bg-blue-200">
+      <GlobalStyles />
+      
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200 shadow-sm sticky top-0 z-50 transition-all">
+        <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3 sm:gap-4 cursor-pointer group" onClick={() => user && navigateTo('list')}>
+            <div className="bg-gradient-to-br from-blue-600 to-sky-400 p-2.5 sm:p-3 rounded-2xl text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform duration-300">
+              <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 animate-float" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black bg-gradient-to-r from-blue-700 via-sky-500 to-blue-700 animate-gradient-x bg-clip-text text-transparent leading-none tracking-tight">
+                PAY FOR MARK
+              </h1>
+              <p className="text-[10px] sm:text-[11px] text-slate-500 font-bold tracking-[0.2em] uppercase mt-1">Smart Examination</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-100 px-4 py-2 rounded-full border border-slate-200 shadow-inner">
+              <Clock className="w-4 h-4 text-blue-500" /> {formatTime(sessionSeconds)}
             </div>
 
-        <button id="submit-quiz-btn" class="btn btn-primary" style="display: none;" onclick="submitBatchQuiz()">ส่งคำตอบและดูผลลัพธ์</button>
-    </div>
+            {user && (
+              <div className="flex items-center gap-3 bg-white p-1.5 pr-4 rounded-full border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-black text-sm shadow-inner text-white ${
+                  user.role === 'admin' ? 'bg-gradient-to-tr from-red-600 to-rose-400' : 
+                  user.role === 'teacher' ? 'bg-gradient-to-tr from-amber-500 to-orange-400' : 
+                  'bg-gradient-to-tr from-blue-600 to-sky-400'
+                }`}>
+                  {user.name[0].toUpperCase()}
+                </div>
+                <div className="text-left leading-tight hidden sm:block">
+                  <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                    {user.role === 'admin' ? '🛡️ Admin' : user.role === 'teacher' ? '👑 Teacher' : '📝 Student'}
+                  </p>
+                  <p className="text-xs font-bold text-slate-700 truncate max-w-[100px]">{user.name}</p>
+                </div>
+                <button onClick={handleLogout} className="ml-1 text-slate-400 hover:text-red-500 transition-colors p-1.5 rounded-full hover:bg-red-50">
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
 
-    <div id="view-admin" class="view-section">
-        <div class="header-bar">
-            <h2>🛠️ เครื่องมือแอดมิน (Prompt Generator)</h2>
-            <button class="btn" style="background: var(--border); padding: 5px 10px;" onclick="location.reload()">ปิด</button>
+      {/* Main Content */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col">
+        {!user ? (
+          <LoginScreen onLogin={handleLogin} />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8 relative items-start">
+            
+            {/* Sidebar Navigation */}
+            <div className="lg:col-span-1 space-y-4 lg:sticky lg:top-[104px]">
+              <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/80">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 mb-4">Main Menu</h3>
+                <nav className="space-y-2">
+                  <NavButton active={activeTab === 'list'} onClick={() => navigateTo('list')} icon={<List className="w-5 h-5" />} text="คลังข้อสอบ" />
+                  <NavButton active={activeTab === 'ranking'} onClick={() => navigateTo('ranking')} icon={<Trophy className="w-5 h-5" />} text="จัดอันดับ" />
+                  {(user.role === 'student' || user.role === 'teacher' || user.role === 'admin') && (
+                    <NavButton active={activeTab === 'history'} onClick={() => navigateTo('history')} icon={<History className="w-5 h-5" />} text="ประวัติส่วนตัว" />
+                  )}
+                  {(user.role === 'teacher' || user.role === 'admin') && (
+                    <NavButton active={activeTab === 'create'} onClick={() => navigateTo('create')} icon={<Edit className="w-5 h-5" />} text="สร้างข้อสอบใหม่" />
+                  )}
+                  {user.role === 'admin' && (
+                    <NavButton active={activeTab === 'admin'} onClick={() => navigateTo('admin')} icon={<ShieldAlert className="w-5 h-5" />} text="Admin Dashboard" highlight={true} />
+                  )}
+                </nav>
+              </div>
+            </div>
+
+            {/* Dashboard Content */}
+            <div className="lg:col-span-3 pb-20">
+              
+              {/* RESUME BANNER */}
+              {activeTab === 'list' && savedExam && savedExam.user === user.name && (
+                <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl p-6 shadow-lg shadow-orange-500/20 text-white mb-8 flex flex-col sm:flex-row justify-between items-center gap-5 animate-fade-in-up">
+                  <div>
+                    <h3 className="text-xl font-black flex items-center gap-2 drop-shadow-sm"><PauseCircle className="w-6 h-6 animate-pulse"/> คุณมีข้อสอบที่ทำค้างไว้!</h3>
+                    <p className="text-sm opacity-90 mt-1 font-medium">วิชา: {savedExam.quizTitle} (ทำถึงข้อที่ {savedExam.currentIndex + 1})</p>
+                  </div>
+                  <div className="flex gap-3 w-full sm:w-auto">
+                    <button onClick={() => { playSound('click'); setSavedExam(null); }} className="flex-1 sm:flex-none bg-black/10 hover:bg-black/20 px-5 py-3 rounded-xl text-sm font-bold transition">ทิ้งข้อสอบ</button>
+                    <button onClick={resumeExam} className="flex-1 sm:flex-none bg-white text-orange-600 hover:bg-orange-50 px-8 py-3 rounded-xl text-sm font-black shadow-md transition transform active:scale-95 flex items-center justify-center gap-2">
+                      <Play className="w-4 h-4 fill-current"/> ทำต่อเลย
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* LIST QUIZZES */}
+              {activeTab === 'list' && (
+                <div className="space-y-6 animate-fade-in-up">
+                  <div>
+                    <h2 className="text-3xl font-black text-slate-800 tracking-tight">คลังข้อสอบออนไลน์</h2>
+                    <p className="text-slate-500 font-medium mt-1">เลือกชุดข้อสอบเพื่อทดสอบความรู้และเก็บคะแนนสะสม</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {quizzes.filter(q => q.isPublic || user.role === 'admin' || q.author === user.name).map((quiz) => {
+                      const canManage = user.role === 'admin' || quiz.author === user.name;
+                      return (
+                        <div key={quiz.id} className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative group">
+                          
+                          {canManage && (
+                            <div className="absolute top-5 right-5 flex items-center gap-3 bg-white/90 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-100 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase">{quiz.isPublic ? 'Public' : 'Private'}</span>
+                                <div className="relative inline-flex items-center">
+                                  <input type="checkbox" className="sr-only peer" checked={quiz.isPublic} onChange={() => toggleQuizVisibility(quiz.id)} />
+                                  <div className="w-8 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                                </div>
+                              </label>
+                              <div className="w-px h-4 bg-slate-200"></div>
+                              <button onClick={() => deleteQuiz(quiz.id)} className="text-slate-400 hover:text-red-500 transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+
+                          <div className="flex-1 pb-5">
+                            <div className="flex items-center gap-2 mb-4">
+                              <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[11px] font-black rounded-lg border border-blue-100 flex items-center gap-1.5">
+                                <List className="w-3.5 h-3.5"/> {quiz.questions.length} ข้อ
+                              </span>
+                              {!quiz.isPublic && (
+                                <span className="px-3 py-1 bg-slate-100 text-slate-600 text-[11px] font-black rounded-lg border border-slate-200 flex items-center gap-1.5">
+                                  <Lock className="w-3.5 h-3.5"/> Private
+                                </span>
+                              )}
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800 leading-snug mb-2 pr-12 group-hover:text-blue-600 transition-colors">{quiz.title}</h3>
+                            <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed mb-5">{quiz.description}</p>
+                            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                              <User className="w-3.5 h-3.5" /> โดย: {quiz.author}
+                            </div>
+                          </div>
+
+                          <div className="flex gap-3 mt-auto pt-5 border-t border-slate-100">
+                            <button onClick={() => startExam(quiz.id, 'batch')} className="flex-1 bg-white text-slate-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 font-bold py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-xs border-2 border-slate-200 transform active:scale-95 shadow-sm">
+                              <BookOpen className="w-4 h-4" /> สอบแบบปกติ
+                            </button>
+                            <button onClick={() => startExam(quiz.id, 'instant')} className="flex-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white font-bold py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-xs border-2 border-emerald-100 hover:border-emerald-500 transform active:scale-95 shadow-sm">
+                              <CheckCircle className="w-4 h-4" /> เฉลยทีละข้อ
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {quizzes.length === 0 && (
+                      <div className="col-span-2 text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200 text-slate-400">
+                        <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-20"/>
+                        <p className="font-bold text-lg text-slate-500">ยังไม่มีชุดข้อสอบในระบบ</p>
+                        {user.role !== 'student' && <p className="text-sm mt-2">ไปที่เมนู "สร้างข้อสอบใหม่" เพื่อเริ่มต้น</p>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* LEADERBOARD (RANKING) */}
+              {activeTab === 'ranking' && (
+                <div className="space-y-6 animate-fade-in-up">
+                  <div>
+                    <h2 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                      <Trophy className="w-8 h-8 text-yellow-500" /> ทำเนียบผู้ทำคะแนนสูงสุด
+                    </h2>
+                    <p className="text-slate-500 font-medium mt-1">จัดอันดับจากเปอร์เซ็นต์ความถูกต้องของทุกการสอบ</p>
+                  </div>
+                  
+                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm">
+                    {history.length === 0 ? (
+                      <div className="text-center py-10 text-slate-400 font-bold">ยังไม่มีข้อมูลการสอบในระบบ</div>
+                    ) : (
+                      <Leaderboard history={history} />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* HISTORY & REVIEW */}
+              {activeTab === 'history' && (
+                <div className="space-y-6 animate-fade-in-up">
+                  {reviewRecord ? (
+                    <ReviewRoom record={reviewRecord} onBack={() => { playSound('click'); setReviewRecord(null); scrollToTop(); }} />
+                  ) : (
+                    <>
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
+                        <div>
+                          <h2 className="text-3xl font-black text-slate-800 tracking-tight">ประวัติการสอบของคุณ</h2>
+                          <p className="text-slate-500 font-medium mt-1">วิเคราะห์ความก้าวหน้าและทบทวนข้อผิดพลาด</p>
+                        </div>
+                        <button onClick={clearUserHistory} className="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-500 hover:text-white px-4 py-2.5 rounded-xl border border-red-100 transition-all shadow-sm w-fit">
+                          <Trash2 className="w-4 h-4 inline mr-1"/> ล้างประวัติส่วนตัว
+                        </button>
+                      </div>
+
+                      <ProgressChart history={history} userName={user.name} />
+
+                      <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm min-h-[300px]">
+                        <h3 className="text-lg font-black text-slate-800 flex items-center gap-2 mb-6"><History className="w-5 h-5 text-blue-500"/> ประวัติย้อนหลัง</h3>
+                        
+                        {history.filter(h => h.user === user.name).length === 0 ? (
+                          <div className="text-center text-slate-400 py-16 flex flex-col items-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                            <History className="w-12 h-12 mb-4 opacity-20"/>
+                            <span className="font-bold">คุณยังไม่มีประวัติการทำข้อสอบ</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {history.filter(h => h.user === user.name).map(record => {
+                              const percent = (record.score / record.maxScore) * 100;
+                              let colorClass = "text-emerald-600 bg-emerald-50 border-emerald-200 shadow-emerald-500/10";
+                              if (percent < 50) colorClass = "text-red-600 bg-red-50 border-red-200 shadow-red-500/10";
+                              else if (percent < 80) colorClass = "text-amber-600 bg-amber-50 border-amber-200 shadow-amber-500/10";
+
+                              return (
+                                <div key={record.id} className="p-5 border border-slate-200 rounded-2xl bg-white hover:border-blue-300 hover:shadow-lg hover:shadow-blue-500/5 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-5 group">
+                                  <div className="flex-1">
+                                    <h4 className="font-black text-slate-800 text-base mb-2 group-hover:text-blue-600 transition-colors">{record.quizTitle}</h4>
+                                    <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-400">
+                                      <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5"/> {record.date}</span>
+                                      <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5"/> {record.mode === 'instant' ? 'เฉลยทันที' : 'แบบปกติ'}</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-4 sm:justify-end border-t pt-4 sm:border-0 sm:pt-0 border-slate-100">
+                                    <div className={`px-5 py-2.5 rounded-xl border-2 text-center min-w-[110px] shadow-sm ${colorClass}`}>
+                                      <div className="text-2xl font-black leading-none mb-1">{record.score}<span className="text-sm font-bold opacity-60">/{record.maxScore}</span></div>
+                                      <div className="text-[10px] font-black uppercase tracking-widest opacity-80">{percent.toFixed(0)}%</div>
+                                    </div>
+                                    
+                                    <button onClick={() => { playSound('click'); setReviewRecord(record); scrollToTop(); }} className="h-[60px] w-14 rounded-xl bg-slate-50 hover:bg-blue-600 text-slate-400 hover:text-white border-2 border-slate-200 hover:border-blue-600 flex items-center justify-center transition-all transform active:scale-95 shadow-sm">
+                                      <Eye className="w-6 h-6"/>
+                                    </button>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* ADMIN DASHBOARD */}
+              {activeTab === 'admin' && user.role === 'admin' && (
+                <div className="space-y-6 animate-fade-in-up">
+                  <h2 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                    <ShieldAlert className="w-8 h-8 text-red-500" /> Admin Control
+                  </h2>
+                  
+                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+                    <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2"><BookOpen className="text-blue-500"/> จัดการข้อสอบทั้งหมด</h3>
+                    <div className="overflow-x-auto custom-scrollbar pb-4">
+                      <table className="w-full text-left text-sm text-slate-600 min-w-[600px]">
+                          <thead className="bg-slate-50 text-[11px] uppercase tracking-widest text-slate-400 font-bold border-b border-slate-200">
+                            <tr><th className="px-5 py-4 rounded-tl-xl">Quiz Title</th><th className="px-5 py-4">Author</th><th className="px-5 py-4 text-center">Status</th><th className="px-5 py-4 text-center rounded-tr-xl">Action</th></tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-medium">
+                            {quizzes.map(quiz => (
+                              <tr key={quiz.id} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="px-5 py-4 text-slate-800 font-bold">{quiz.title}</td>
+                                <td className="px-5 py-4">{quiz.author}</td>
+                                <td className="px-5 py-4 text-center">
+                                  <button onClick={() => toggleQuizVisibility(quiz.id)} className={`text-[10px] font-black px-3 py-1.5 rounded-lg border-2 transition-colors ${quiz.isPublic ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'}`}>
+                                    {quiz.isPublic ? 'PUBLIC' : 'PRIVATE'}
+                                  </button>
+                                </td>
+                                <td className="px-5 py-4 text-center">
+                                  <button onClick={() => deleteQuiz(quiz.id)} className="p-2 text-slate-400 hover:bg-red-100 hover:text-red-500 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                </td>
+                              </tr>
+                            ))}
+                            {quizzes.length === 0 && <tr><td colSpan="4" className="text-center py-6 text-slate-400">ไม่มีข้อมูล</td></tr>}
+                          </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+                        <h3 className="text-lg font-black text-slate-800 flex items-center gap-2"><Globe className="w-5 h-5 text-blue-500"/> Global History</h3>
+                        <button onClick={clearGlobalHistory} className="text-xs font-bold bg-red-50 border-2 border-red-100 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 px-4 py-2.5 rounded-xl transition-all shadow-sm">ล้างประวัติทั้งระบบ (Danger)</button>
+                    </div>
+                    <div className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+                        {history.length === 0 && <div className="text-center py-6 text-slate-400">ไม่มีข้อมูล</div>}
+                        {history.map(h => (
+                          <div key={h.id} className="text-sm p-4 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-white hover:border-blue-200 transition-colors">
+                            <div>
+                              <span className="font-black text-slate-700 bg-white px-3 py-1 rounded-lg border shadow-sm mr-3">{h.user}</span> 
+                              <span className="text-slate-600 font-bold">{h.quizTitle}</span>
+                              <span className="text-[10px] text-slate-400 ml-2">({h.date})</span>
+                            </div> 
+                            <div className="font-black text-blue-600 bg-blue-50 border border-blue-100 px-4 py-1.5 rounded-xl text-center sm:text-right shadow-sm">{h.score} / {h.maxScore}</div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CREATE QUIZ */}
+              {activeTab === 'create' && (user.role === 'teacher' || user.role === 'admin') && (
+                <QuizBuilder user={user} onSave={handleSaveNewQuiz} onCancel={() => navigateTo('list')} />
+              )}
+              
+              {/* EXAM ROOM */}
+              {activeTab === 'exam' && selectedQuizId && (
+                <ExamRoom 
+                  quiz={quizzes.find(q => q.id === selectedQuizId)} user={user} mode={examConfig?.mode} savedState={savedExam?.quizId === selectedQuizId ? savedExam : null}
+                  onSavePause={(state) => { setSavedExam(state); navigateTo('list'); }}
+                  onFinish={(record) => { setHistory([record, ...history]); setSavedExam(null); }}
+                  onBack={() => navigateTo('list')}
+                />
+              )}
+
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Scroll to Top FAB */}
+      {showScrollTop && (
+        <button 
+          onClick={scrollToTop} 
+          className="fixed bottom-6 right-6 p-3 bg-blue-600 text-white rounded-full shadow-lg shadow-blue-500/40 hover:bg-blue-700 hover:scale-110 transition-all z-50 animate-fade-in-up"
+        >
+          <ArrowUp className="w-5 h-5"/>
+        </button>
+      )}
+    </div>
+  );
+}
+
+// --- Sub-components ---
+
+function NavButton({ active, onClick, icon, text, highlight }) {
+  return (
+    <button onClick={onClick} className={`w-full flex items-center gap-3 p-3.5 rounded-2xl font-bold transition-all duration-300 text-sm text-left group border-2 ${ 
+      active 
+        ? highlight ? 'bg-gradient-to-r from-red-600 to-rose-500 text-white border-transparent shadow-lg shadow-red-500/20' : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white border-transparent shadow-lg shadow-blue-500/20' 
+        : highlight ? 'text-red-500 hover:bg-red-50 border-transparent hover:border-red-100' : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-100 hover:border-slate-200 hover:shadow-sm' 
+    }`}>
+      <span className={active ? 'text-white' : 'text-slate-400 group-hover:text-current transition-colors'}>{icon}</span> {text}
+      {active && <ChevronRight className="w-4 h-4 ml-auto opacity-70"/>}
+    </button>
+  );
+}
+
+// --- Leaderboard Component ---
+function Leaderboard({ history }) {
+  // Aggregate stats by user
+  const userStats = history.reduce((acc, curr) => {
+    if (!acc[curr.user]) acc[curr.user] = { user: curr.user, totalScore: 0, totalMax: 0, examsTaken: 0 };
+    acc[curr.user].totalScore += curr.score;
+    acc[curr.user].totalMax += curr.maxScore;
+    acc[curr.user].examsTaken += 1;
+    return acc;
+  }, {});
+
+  // Calculate percentage and sort
+  const ranking = Object.values(userStats)
+    .map(s => ({ ...s, percent: (s.totalScore / s.totalMax) * 100 }))
+    .sort((a, b) => b.percent - a.percent);
+
+  return (
+    <div className="space-y-4">
+      {ranking.map((user, index) => {
+        const isTop3 = index < 3;
+        return (
+          <div key={user.user} className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${isTop3 ? 'bg-gradient-to-r from-amber-50 to-orange-50/50 border-amber-200' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
+            <div className={`w-10 h-10 shrink-0 flex items-center justify-center rounded-xl font-black text-lg ${index === 0 ? 'bg-yellow-400 text-white shadow-lg shadow-yellow-500/30' : index === 1 ? 'bg-slate-300 text-white shadow-md' : index === 2 ? 'bg-amber-600 text-white shadow-md' : 'bg-slate-100 text-slate-400'}`}>
+              {index + 1}
+            </div>
+            <div className="flex-1">
+              <h4 className="font-black text-slate-800 text-lg flex items-center gap-2">
+                {user.user} {index === 0 && <Crown className="w-4 h-4 text-yellow-500"/>}
+              </h4>
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">ทำสอบไปแล้ว {user.examsTaken} ครั้ง</p>
+            </div>
+            <div className="text-right">
+              <div className={`text-2xl font-black ${isTop3 ? 'text-amber-600' : 'text-blue-600'}`}>{user.percent.toFixed(1)}%</div>
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{user.totalScore} / {user.totalMax} pts</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ProgressChart({ history, userName }) {
+  const userHistory = history.filter(h => h.user === userName).slice(0, 10).reverse();
+  if (userHistory.length < 2) return null;
+
+  const width = 800; const height = 180; const padding = 30;
+  const points = userHistory.map((h, i) => {
+    const x = padding + (i * ((width - padding * 2) / (userHistory.length - 1)));
+    const percent = (h.score / h.maxScore);
+    const y = height - padding - (percent * (height - padding * 2));
+    return { x, y, percent, title: h.quizTitle };
+  });
+  const pathD = `M ${points.map(p => `${p.x},${p.y}`).join(' L ')}`;
+  const areaD = `${pathD} L ${points[points.length-1].x},${height-padding} L ${points[0].x},${height-padding} Z`;
+
+  return (
+    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm mb-6 relative overflow-hidden group">
+      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-sky-400 to-emerald-400"></div>
+      <h3 className="text-sm font-black text-slate-700 flex items-center gap-2 mb-6 uppercase tracking-widest"><TrendingUp className="w-5 h-5 text-emerald-500"/> พัฒนาการ 10 ครั้งล่าสุด</h3>
+      
+      <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+        <div style={{ minWidth: '600px' }}>
+          <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+            {[0, 0.25, 0.5, 0.75, 1].map(ratio => (
+              <g key={ratio}>
+                <line x1={padding} y1={height - padding - (ratio * (height - padding * 2))} x2={width - padding} y2={height - padding - (ratio * (height - padding * 2))} stroke="#f1f5f9" strokeWidth="2" strokeDasharray="6 6" />
+                <text x={padding - 10} y={height - padding - (ratio * (height - padding * 2)) + 4} textAnchor="end" fill="#94a3b8" fontSize="10" fontWeight="bold">{ratio * 100}%</text>
+              </g>
+            ))}
+            <path d={areaD} fill="url(#gradient)" opacity="0.15" />
+            <path d={pathD} fill="none" stroke="#3b82f6" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-md" />
+            {points.map((p, i) => (
+              <g key={i} className="cursor-pointer group/point">
+                <circle cx={p.x} cy={p.y} r="5" fill="#ffffff" stroke="#3b82f6" strokeWidth="3" className="transition-all duration-300 group-hover/point:r-7 group-hover/point:stroke-emerald-500" />
+                <rect x={p.x - 20} y={p.y - 30} width="40" height="20" rx="4" fill="#1e293b" className="opacity-0 group-hover/point:opacity-100 transition-opacity" pointerEvents="none"/>
+                <text x={p.x} y={p.y - 16} textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="bold" className="opacity-0 group-hover/point:opacity-100 transition-opacity" pointerEvents="none">
+                  {Math.round(p.percent * 100)}%
+                </text>
+              </g>
+            ))}
+            <defs>
+              <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" />
+                <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================
+   Component: Login
+   ========================================= */
+function LoginScreen({ onLogin }) {
+  const [name, setName] = useState('');
+  const [role, setRole] = useState('student');
+  return (
+    <div className="max-w-md w-full mx-auto bg-white/90 backdrop-blur-2xl rounded-[2.5rem] p-8 sm:p-10 shadow-2xl shadow-blue-900/10 border border-white mt-10 sm:mt-20 animate-fade-in-up relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 translate-x-1/2 -translate-y-1/2"></div>
+      <div className="text-center mb-10 relative z-10">
+        <div className="bg-gradient-to-br from-blue-600 to-sky-400 w-20 h-20 rounded-[1.5rem] text-white flex items-center justify-center mx-auto shadow-xl shadow-blue-500/30 mb-5 animate-float">
+          <BookOpen className="w-10 h-10" />
+        </div>
+        <h2 className="text-3xl font-black bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent tracking-tight">เข้าสู่ระบบ</h2>
+        <p className="text-[11px] text-slate-400 mt-2 font-bold uppercase tracking-widest">Pay For Mark Platform</p>
+      </div>
+      <form onSubmit={(e) => { e.preventDefault(); playSound('click'); onLogin(name, role); }} className="space-y-6 relative z-10">
+        <div>
+          <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">ชื่อของคุณ</label>
+          <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="พิมพ์ชื่อเพื่อเข้าใช้งาน (เช่น Hello สำหรับ Admin)" className="w-full px-5 py-4 bg-slate-50/50 border-2 border-slate-100 focus:border-blue-500 focus:bg-white outline-none rounded-2xl text-sm font-bold text-slate-700 transition-all shadow-inner" />
+        </div>
+        {name.trim().toLowerCase() !== 'hello' && (
+          <div className="animate-fade-in-up">
+            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">เลือกสิทธิ์การใช้งาน</label>
+            <div className="relative">
+              <select value={role} onChange={e => setRole(e.target.value)} className="w-full px-5 py-4 bg-slate-50/50 border-2 border-slate-100 rounded-2xl text-sm outline-none focus:border-blue-500 focus:bg-white font-bold text-slate-700 transition-all shadow-inner appearance-none cursor-pointer">
+                <option value="student">📝 นักเรียน (ทำข้อสอบ)</option>
+                <option value="teacher">👑 ครู (สร้างข้อสอบ)</option>
+              </select>
+              <ChevronRight className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none rotate-90"/>
+            </div>
+          </div>
+        )}
+        <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-black py-4.5 rounded-2xl shadow-xl shadow-blue-500/30 hover:shadow-blue-600/40 transition-all duration-300 text-sm mt-4 transform active:scale-95 uppercase tracking-wider">
+          เข้าสู่ระบบ
+        </button>
+      </form>
+    </div>
+  );
+}
+
+/* =========================================
+   Component: Exam Room 
+   ========================================= */
+function ExamRoom({ quiz, user, mode = 'batch', savedState, onSavePause, onFinish, onBack }) {
+  const [currentIndex, setCurrentIndex] = useState(savedState?.currentIndex || 0);
+  const [answers, setAnswers] = useState(savedState?.answers || {});
+  const [matchingAnswers, setMatchingAnswers] = useState(savedState?.matchingAnswers || {});
+  const [confidences, setConfidences] = useState(savedState?.confidences || {});
+  const [checkedQuestions, setCheckedQuestions] = useState(savedState?.checkedQuestions || {});
+  
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showExplanation, setShowExplanation] = useState({});
+  const [examResult, setExamResult] = useState(null);
+
+  const q = quiz.questions[currentIndex];
+  const totalQuestions = quiz.questions.length;
+  const isLastQuestion = currentIndex === totalQuestions - 1;
+
+  const handleSelect = (qId, option) => { if (isSubmitted || checkedQuestions[qId]) return; playSound('click'); setAnswers(prev => ({ ...prev, [qId]: option })); };
+  const handleMatching = (qId, subQId, letter) => { if (isSubmitted || checkedQuestions[qId]) return; playSound('click'); setMatchingAnswers(prev => ({ ...prev, [qId]: { ...(prev[qId] || {}), [subQId]: letter } })); };
+  const handleConfidence = (qId, val) => { if (isSubmitted || checkedQuestions[qId]) return; playSound('click'); setConfidences(prev => ({ ...prev, [qId]: val })); };
+
+  const handleNav = (direction) => {
+    playSound('next');
+    if (direction === 'next') {
+      if (!confidences[q.id]) return alert("กรุณาระบุระดับความมั่นใจก่อนไปข้อถัดไปครับ");
+      if (!isLastQuestion) { setCurrentIndex(prev => prev + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    }
+    if (direction === 'prev' && currentIndex > 0) { setCurrentIndex(prev => prev - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  };
+
+  const handleCheckInstant = () => {
+    if (!confidences[q.id]) return alert("กรุณาระบุความมั่นใจก่อนตรวจคำตอบ");
+    playSound('success'); setCheckedQuestions(prev => ({ ...prev, [q.id]: true })); setShowExplanation(prev => ({ ...prev, [q.id]: true }));
+  };
+
+  const handleSaveAndPause = () => { playSound('click'); onSavePause({ user: user.name, quizId: quiz.id, quizTitle: quiz.title, mode, currentIndex, answers, matchingAnswers, confidences, checkedQuestions }); };
+
+  const handleSubmit = () => {
+    if (!confidences[q.id]) return alert("กรุณาระบุความมั่นใจในข้อสุดท้ายก่อนส่งคำตอบ");
+    playSound('success');
+    let score = 0; let max = 0; let stats = { cc: 0, cw: 0, nc: 0, nw: 0 };
+    quiz.questions.forEach(question => {
+      let isCorrect = false; const conf = confidences[question.id] === 'confident';
+      if (question.type === 'mcq' || question.type === 'tf') {
+        max++; if (answers[question.id] === question.correctAnswer) { score++; isCorrect = true; }
+        if(conf && isCorrect) stats.cc++; else if(conf && !isCorrect) stats.cw++; else if(!conf && isCorrect) stats.nc++; else if(!conf && !isCorrect) stats.nw++;
+      } else if (question.type === 'matching') {
+        let subCorrect = 0;
+        question.questions.forEach(sub => { max++; if (matchingAnswers[question.id]?.[sub.id] === question.correctAnswers[sub.id]) { score++; subCorrect++; } });
+        isCorrect = (subCorrect === question.questions.length);
+        if(conf && isCorrect) stats.cc++; else if(conf && !isCorrect) stats.cw++; else if(!conf && isCorrect) stats.nc++; else if(!conf && !isCorrect) stats.nw++;
+      }
+    });
+
+    setExamResult({ score, maxScore: max, analytics: stats }); setIsSubmitted(true); setCurrentIndex(0); window.scrollTo({ top: 0, behavior: 'smooth' });
+    onFinish({ id: Date.now(), user: user.name, quizId: quiz.id, quizTitle: quiz.title, mode: mode, score, maxScore: max, analytics: stats, date: new Date().toLocaleString('th-TH'), quizSnapshot: quiz, answers, matchingAnswers, confidences });
+  };
+
+  const isQuestionLocked = isSubmitted || checkedQuestions[q.id];
+
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto animate-fade-in-up">
+      {/* Top Bar */}
+      <div className="bg-white/90 backdrop-blur-md rounded-2xl p-4 sm:px-6 border border-slate-200 shadow-sm sticky top-[80px] z-40 flex items-center justify-between">
+        <button onClick={onBack} className="text-[11px] font-black text-slate-400 hover:text-blue-600 flex items-center gap-1.5 transition-colors uppercase tracking-widest bg-slate-50 hover:bg-blue-50 px-3 py-1.5 rounded-lg border border-slate-100">
+          <ArrowLeft className="w-3.5 h-3.5"/> ออก
+        </button>
+        <div className="font-black text-sm text-slate-700 hidden sm:block truncate max-w-[40%]">{quiz.title}</div>
+        
+        <div className="flex gap-2 sm:gap-3 items-center">
+          {!isSubmitted && (
+            <button onClick={handleSaveAndPause} className="text-[11px] font-black text-amber-600 bg-amber-50 hover:bg-amber-100 px-3 py-2 rounded-lg border border-amber-200 transition-colors flex items-center gap-1.5 uppercase tracking-widest shadow-sm">
+              <Save className="w-3.5 h-3.5"/> พักสอบ
+            </button>
+          )}
+          <div className="text-xs font-black bg-gradient-to-r from-blue-600 to-sky-500 text-white px-4 py-2 rounded-lg shadow-md shadow-blue-500/20 tracking-wider">
+            ข้อ {currentIndex + 1} / {totalQuestions}
+          </div>
+        </div>
+      </div>
+
+      {isSubmitted && examResult && (
+        <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-xl shadow-blue-900/5 flex flex-col lg:flex-row gap-8 items-center justify-between relative overflow-hidden animate-fade-in-up">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-20 translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+          <div className="text-center lg:text-left flex-1 relative z-10">
+            <span className="text-[10px] font-black text-emerald-600 bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-full uppercase tracking-widest mb-4 inline-block">Exam Completed</span>
+            <h3 className="text-3xl sm:text-4xl font-black text-slate-800 flex items-center justify-center lg:justify-start gap-3 mb-3">
+              <Award className="w-10 h-10 text-yellow-500 drop-shadow-md"/> ทำสำเร็จแล้ว!
+            </h3>
+            <p className="text-slate-500 font-bold">คะแนนรวมของคุณคือ <span className="text-5xl font-black text-blue-600 mx-2">{examResult.score}</span> / {examResult.maxScore}</p>
+          </div>
+          
+          <div className="flex-1 w-full bg-slate-50/80 p-6 rounded-2xl border-2 border-slate-100 relative z-10 shadow-inner">
+            <h4 className="text-xs font-black text-slate-500 mb-5 text-center flex items-center justify-center gap-2 uppercase tracking-widest"><BarChart3 className="w-4 h-4 text-blue-500"/> วิเคราะห์ความมั่นใจ</h4>
+            <div className="space-y-3.5 text-[11px] font-bold text-slate-600">
+              <div className="flex items-center gap-4">
+                <div className="w-24 text-right">มั่นใจ + ถูก</div>
+                <div className="flex-1 bg-white rounded-full h-3 overflow-hidden shadow-inner border border-slate-100"><div className="bg-emerald-500 h-full rounded-full transition-all duration-1000" style={{width: `${(examResult.analytics.cc / totalQuestions) * 100}%`}}></div></div>
+                <div className="w-6 font-black text-slate-800 text-sm">{examResult.analytics.cc}</div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="w-24 text-right">มั่นใจ แต่ ผิด</div>
+                <div className="flex-1 bg-white rounded-full h-3 overflow-hidden shadow-inner border border-slate-100"><div className="bg-red-400 h-full rounded-full transition-all duration-1000" style={{width: `${(examResult.analytics.cw / totalQuestions) * 100}%`}}></div></div>
+                <div className="w-6 font-black text-slate-800 text-sm">{examResult.analytics.cw}</div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="w-24 text-right">เดา แต่ ถูก</div>
+                <div className="flex-1 bg-white rounded-full h-3 overflow-hidden shadow-inner border border-slate-100"><div className="bg-blue-400 h-full rounded-full transition-all duration-1000" style={{width: `${(examResult.analytics.nc / totalQuestions) * 100}%`}}></div></div>
+                <div className="w-6 font-black text-slate-800 text-sm">{examResult.analytics.nc}</div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="w-24 text-right">เดา + ผิด</div>
+                <div className="flex-1 bg-white rounded-full h-3 overflow-hidden shadow-inner border border-slate-100"><div className="bg-slate-400 h-full rounded-full transition-all duration-1000" style={{width: `${(examResult.analytics.nw / totalQuestions) * 100}%`}}></div></div>
+                <div className="w-6 font-black text-slate-800 text-sm">{examResult.analytics.nw}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Question Card */}
+      <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm min-h-[400px] flex flex-col relative overflow-hidden transition-all">
+        {mode === 'instant' && checkedQuestions[q.id] && !isSubmitted && (
+          <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[11px] font-black px-5 py-2 rounded-bl-3xl z-10 flex items-center gap-1.5 shadow-md tracking-widest uppercase">
+            <Check className="w-4 h-4"/> ตรวจแล้ว
+          </div>
+        )}
+
+        <div className="flex-1">
+          <span className="text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full mb-5 inline-block uppercase tracking-widest shadow-sm">
+             {q.type === 'mcq' ? 'ปรนัย (Multiple Choice)' : q.type === 'tf' ? 'ถูก/ผิด (True/False)' : 'จับคู่ (Matching)'}
+          </span>
+          <h3 className="text-xl sm:text-2xl font-black text-slate-800 leading-snug mb-8">{q.text}</h3>
+
+          <QuestionRenderer q={q} answers={answers} matchingAnswers={matchingAnswers} isQuestionLocked={isQuestionLocked} handleSelect={handleSelect} handleMatching={handleMatching} />
+
+          {/* Confidence Input */}
+          <div className="mt-12 bg-slate-50 border-2 border-slate-100 p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-5 transition-all">
+            <span className="text-sm font-black text-slate-700 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-amber-500"/> ระบุความมั่นใจในคำตอบข้อนี้
+            </span>
+            <div className="flex gap-3 w-full sm:w-auto">
+              <button onClick={() => handleConfidence(q.id, 'confident')} disabled={isQuestionLocked} className={`flex-1 sm:flex-none px-6 py-3 rounded-xl text-xs font-black border-2 transition-all transform active:scale-95 uppercase tracking-widest ${confidences[q.id] === 'confident' ? 'border-blue-500 bg-blue-500 text-white shadow-lg shadow-blue-500/30' : 'border-slate-200 bg-white text-slate-500 hover:border-blue-400 hover:text-blue-600 shadow-sm'}`}>
+                🔥 มั่นใจ
+              </button>
+              <button onClick={() => handleConfidence(q.id, 'guess')} disabled={isQuestionLocked} className={`flex-1 sm:flex-none px-6 py-3 rounded-xl text-xs font-black border-2 transition-all transform active:scale-95 uppercase tracking-widest ${confidences[q.id] === 'guess' ? 'border-slate-700 bg-slate-700 text-white shadow-lg shadow-slate-700/30' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 shadow-sm'}`}>
+                🎲 เดา
+              </button>
+            </div>
+          </div>
+
+          {/* Explanation Area */}
+          {(isSubmitted || showExplanation[q.id]) && q.explanation && (
+            <div className="mt-8 p-6 bg-gradient-to-r from-emerald-50 to-green-50/50 rounded-2xl border-2 border-emerald-100 text-sm text-slate-700 animate-fade-in-up shadow-inner">
+              <span className="font-black text-emerald-600 flex items-center gap-2 mb-3 uppercase tracking-widest text-xs">
+                <CheckCircle className="w-4 h-4"/> คำอธิบายเฉลย
+              </span>
+              <p className="leading-relaxed font-medium">{q.explanation}</p>
+            </div>
+          )}
         </div>
 
-        <p style="text-align: left; margin-bottom: 10px;">
-            <strong>พิมพ์ข้อสอบแบบย่อ:</strong> โครงสร้าง `ข้อ. คำถาม /a= /b= /c= /d= _<answer/คำตอบ[คำอธิบาย]`
-        </p>
-        
-        <textarea id="shorthand-input" placeholder="ตัวอย่าง:
-1. who .... you /a=is /b=are /c=were /d=was _<answer/b[because you using with are]
-2. ..."></textarea>
+        {/* Navigation */}
+        <div className="mt-12 pt-6 border-t-2 border-slate-100 flex flex-wrap justify-between items-center gap-4">
+          <button onClick={() => handleNav('prev')} disabled={currentIndex === 0} className={`px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all ${currentIndex === 0 ? 'text-slate-300 bg-slate-50 border border-slate-100' : 'text-slate-600 bg-white border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-sm active:scale-95'}`}>
+            <ArrowLeft className="w-4 h-4"/> ย้อนกลับ
+          </button>
+          
+          <div className="flex gap-3 ml-auto">
+            {mode === 'instant' && !isSubmitted && !checkedQuestions[q.id] && (
+              <button onClick={handleCheckInstant} className="bg-emerald-500 hover:bg-emerald-600 text-white font-black px-8 py-3 rounded-xl shadow-lg shadow-emerald-500/30 text-sm transition-all transform active:scale-95 uppercase tracking-widest">
+                ตรวจคำตอบ
+              </button>
+            )}
 
-        <button class="btn btn-primary" onclick="generatePrompt()">1. สร้าง Prompt สำหรับ AI</button>
-
-        <div id="generated-prompt" class="prompt-result-box"></div>
-        <button id="copy-btn" class="btn btn-success" style="display: none; width: 100%; margin-top: 10px;" onclick="copyPrompt()">2. คัดลอก Prompt</button>
-
-        <hr style="margin: 30px 0; border: none; border-top: 1px solid var(--border);">
-        <h3 style="font-size: 16px; color: var(--text-muted);">คำแนะนำ: นำ Prompt ที่คัดลอกได้ ไปวางใน ChatGPT หรือ Gemini เพื่อให้ AI สร้างโค้ดข้อสอบ หรือทำระบบวิเคราะห์กราฟให้ครับ</h3>
+            {!isSubmitted && isLastQuestion ? (
+              <button onClick={handleSubmit} className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-black px-10 py-3 rounded-xl shadow-xl shadow-blue-500/40 transition-all transform active:scale-95 text-sm uppercase tracking-widest">
+                ส่งข้อสอบทั้งหมด
+              </button>
+            ) : (
+              <button onClick={() => handleNav('next')} disabled={isLastQuestion} className={`px-8 py-3 rounded-xl font-black text-sm flex items-center gap-2 transition-all uppercase tracking-widest shadow-sm active:scale-95 ${isLastQuestion ? 'text-slate-300 bg-slate-50 border border-slate-100' : 'text-blue-600 bg-blue-50 border-2 border-blue-100 hover:bg-blue-100 hover:border-blue-200'}`}>
+                ถัดไป <ArrowRight className="w-4 h-4"/>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
+  );
+}
 
-</div>
+// --- Question Renderer ---
+function QuestionRenderer({ q, answers, matchingAnswers, isQuestionLocked, handleSelect, handleMatching }) {
+  if (q.type === 'mcq') {
+    return (
+      <div className="space-y-4">
+        {q.options.map((opt) => {
+          const isSelected = answers[q.id] === opt.key; const isCorrect = opt.key === q.correctAnswer;
+          let style = "border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 hover:shadow-md cursor-pointer bg-white";
+          if (isSelected) style = "border-blue-500 bg-blue-50 text-blue-800 font-bold shadow-md shadow-blue-500/10";
+          if (isQuestionLocked) {
+            style = "cursor-default border-slate-100 opacity-60 bg-slate-50/80";
+            if (isCorrect) style = "border-emerald-500 bg-emerald-50 text-emerald-800 font-black z-10 relative opacity-100 shadow-md shadow-emerald-500/20";
+            else if (isSelected) style = "border-red-400 bg-red-50 text-red-800 opacity-100 font-bold border-2";
+          }
+          return (
+            <div key={opt.key} onClick={() => handleSelect && handleSelect(q.id, opt.key)} className={`w-full text-left p-4 sm:p-5 rounded-2xl border-2 transition-all duration-300 flex items-center gap-4 sm:gap-5 ${style}`}>
+              <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black shrink-0 transition-colors shadow-sm ${isSelected || (isQuestionLocked && isCorrect) ? 'bg-current text-white shadow-inner' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                {opt.key}
+              </span>
+              <span className="text-sm sm:text-base font-semibold leading-relaxed flex-1">{opt.text}</span>
+              {isQuestionLocked && isCorrect && <CheckCircle className="w-7 h-7 text-emerald-500 shrink-0" />}
+              {isQuestionLocked && isSelected && !isCorrect && <X className="w-7 h-7 text-red-500 shrink-0" />}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+  if (q.type === 'tf') {
+    return (
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+        {['True', 'False'].map(opt => {
+          const isSelected = answers[q.id] === opt; const isCorrect = opt === q.correctAnswer;
+          let style = "border-slate-200 hover:border-blue-400 hover:bg-blue-50 hover:shadow-md cursor-pointer text-slate-600 bg-white";
+          if (isSelected) style = "border-blue-500 bg-blue-50 text-blue-800 font-black shadow-md shadow-blue-500/10";
+          if (isQuestionLocked) {
+            style = "cursor-default opacity-50 bg-slate-50 text-slate-400 border-slate-100";
+            if (isCorrect) style = "border-emerald-500 bg-emerald-50 text-emerald-800 font-black opacity-100 shadow-md shadow-emerald-500/20";
+            else if (isSelected) style = "border-red-400 bg-red-50 text-red-800 opacity-100 font-bold";
+          }
+          return (
+            <div key={opt} onClick={() => handleSelect && handleSelect(q.id, opt)} className={`flex-1 p-6 rounded-2xl border-2 transition-all text-base flex justify-center items-center gap-3 ${style}`}>
+              {opt === 'True' ? <span className="flex items-center gap-2"><CheckCircle className="w-6 h-6"/> True (ถูก)</span> : <span className="flex items-center gap-2"><X className="w-6 h-6"/> False (ผิด)</span>}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+  if (q.type === 'matching') {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-slate-50/80 p-5 sm:p-6 rounded-3xl border-2 border-slate-100">
+        <div className="space-y-4">
+          <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest bg-white w-fit px-3 py-1 rounded-lg shadow-sm border border-slate-100">โจทย์ (Prompt)</h4>
+          {q.questions.map(sub => {
+            const val = matchingAnswers[q.id]?.[sub.id] || ''; const isCorrect = val === q.correctAnswers[sub.id];
+            return (
+              <div key={sub.id} className="flex gap-3 items-center">
+                <select value={val} onChange={e => handleSelect && handleMatching(q.id, sub.id, e.target.value)} disabled={isQuestionLocked} className={`p-2 sm:p-3 border-2 rounded-xl text-sm font-black w-16 text-center outline-none transition-colors appearance-none cursor-pointer shadow-sm ${isQuestionLocked ? (isCorrect ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-red-400 bg-red-50 text-red-700') : 'border-blue-200 focus:border-blue-500 bg-white hover:border-blue-400'}`}>
+                  <option value="" disabled>-</option>{q.options.map(o => <option key={o.letter} value={o.letter}>{o.letter}</option>)}
+                </select>
+                <span className="text-sm font-bold text-slate-700 bg-white px-4 py-3 rounded-xl border border-slate-200 flex-1 shadow-sm">{sub.id}. {sub.text}</span>
+                {isQuestionLocked && !isCorrect && <span className="text-[10px] font-black text-white bg-red-500 px-3 py-1.5 rounded-lg shrink-0 shadow-sm uppercase">เฉลย {q.correctAnswers[sub.id]}</span>}
+              </div>
+            );
+          })}
+        </div>
+        <div className="space-y-3 bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm h-fit">
+          <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 w-fit px-3 py-1 rounded-lg border border-slate-100 mb-4">ตัวเลือก (Options)</h4>
+          {q.options.map(opt => (
+            <div key={opt.letter} className="flex gap-3 text-sm items-start p-2 rounded-xl hover:bg-slate-50 transition-colors">
+              <span className="font-black bg-blue-50 text-blue-600 w-8 h-8 flex items-center justify-center rounded-xl shrink-0 border border-blue-100 shadow-sm">{opt.letter}</span>
+              <span className="text-slate-600 font-semibold pt-1.5">{opt.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+}
 
-<script>
-    // ==========================================
-    // ส่วนที่ 1: ระบบแอดมิน (สร้าง Prompt)
-    // ==========================================
-    
-    // ซ่อน/แสดง โหมดแอดมิน (เช็คผ่าน Prompt ปกติ ไม่ต้อง Login ให้วุ่นวาย)
-    function toggleAdminMode() {
-        const passcode = prompt("กรุณาใส่รหัสผ่านแอดมิน (ลองพิมพ์ admin33):");
-        if (passcode === "admin33") {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.getElementById('view-admin').classList.add('active');
-        } else if (passcode !== null) {
-            alert("รหัสผ่านไม่ถูกต้อง");
-        }
-    }
+// --- Review Room ---
+function ReviewRoom({ record, onBack }) {
+  const quiz = record.quizSnapshot;
+  if (!quiz) return <div className="text-center p-10 font-bold text-slate-400 bg-white rounded-3xl border border-slate-200">ไม่สามารถโหลดข้อมูลข้อสอบชุดนี้ได้ (ข้อมูลเก่าเกินไป)</div>;
 
-    function generatePrompt() {
-        const rawInput = document.getElementById('shorthand-input').value.trim();
-        if (!rawInput) { alert("กรุณาใส่ข้อมูลข้อสอบก่อนครับ"); return; }
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto animate-fade-in-up pb-10">
+      <div className="bg-white/90 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm sticky top-[80px] z-40">
+        <div>
+          <button onClick={onBack} className="text-[11px] font-black text-slate-400 hover:text-blue-600 flex items-center gap-1.5 transition-colors uppercase tracking-widest mb-3 bg-slate-50 hover:bg-blue-50 w-fit px-3 py-1.5 rounded-lg border border-slate-100">
+            <ArrowLeft className="w-3.5 h-3.5"/> ปิดหน้าทบทวน
+          </button>
+          <h2 className="text-2xl font-black text-slate-800 leading-snug">{record.quizTitle}</h2>
+          <p className="text-xs text-slate-500 font-bold mt-1">สอบเมื่อ: {record.date}</p>
+        </div>
+        <div className="bg-blue-50 border-2 border-blue-100 px-6 py-4 rounded-2xl text-center shadow-sm w-full sm:w-auto">
+          <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">คะแนนที่ได้</div>
+          <div className="text-3xl font-black text-blue-600 leading-none">{record.score} <span className="text-lg text-blue-300">/ {record.maxScore}</span></div>
+        </div>
+      </div>
 
-        // Master Prompt ที่สั่ง AI ให้ทำงานครบตามที่คุณต้องการ
-        const masterPrompt = `คุณคือผู้เชี่ยวชาญด้านการสร้างระบบทดสอบความรู้และวิเคราะห์สถิติ
-
-ฉันมีข้อมูลข้อสอบแบบย่อ (Shorthand) ด้านล่างนี้ โครงสร้างคือ: 
-[เลขข้อ]. [คำถาม] /a=[ตัวเลือก] /b=[ตัวเลือก] /c=[ตัวเลือก] /d=[ตัวเลือก] _<answer/[ตัวเลือกที่ถูก][คำอธิบายเมื่อตอบผิดหรือถูก]
-
-**สิ่งที่คุณต้องทำ:**
-1. แปลงข้อมูลย่อนี้ให้เป็นโครงสร้าง JSON Array หรือ HTML/JS ที่พร้อมนำไปใช้งานในระบบเว็บ
-2. **การจัดหมวดหมู่ (Parts):** ให้วิเคราะห์คำถามแต่ละข้อและจัดหมวดหมู่ (Tag/Part) ให้โดยอัตโนมัติ (เช่น Part: Grammar, Part: Vocabulary)
-3. **ระบบวิเคราะห์จุดอ่อน (Analytics):** เพิ่มฟังก์ชันหรือคำสั่งลงในระบบ เพื่อให้เมื่อผู้ใช้ทำข้อสอบเสร็จ ระบบจะ:
-   - สรุปว่าผู้ใช้ทำผิดใน Part ไหนมากที่สุด
-   - อธิบายว่าทำไมถึงผิด และให้คำแนะนำในการปรับปรุง
-   - **แสดงผลลัพธ์เป็นกราฟแท่ง (Bar Chart) หรือกราฟเรดาร์ (Radar Chart)** เพื่อเปรียบเทียบสถิติความเข้าใจในแต่ละ Part ให้เห็นภาพชัดเจน
-
-**ข้อมูลข้อสอบแบบย่อ:**
-${rawInput}
-
-กรุณาสร้างโค้ดและคำอธิบายระบบมาให้สมบูรณ์ครับ`;
-
-        const resultBox = document.getElementById('generated-prompt');
-        resultBox.textContent = masterPrompt;
-        resultBox.style.display = "block";
-        document.getElementById('copy-btn').style.display = "block";
-    }
-
-    function copyPrompt() {
-        const textToCopy = document.getElementById('generated-prompt').textContent;
-        navigator.clipboard.writeText(textToCopy).then(() => {
-            const btn = document.getElementById('copy-btn');
-            btn.innerText = "✅ คัดลอกสำเร็จ! นำไปวางใน AI ได้เลย";
-            setTimeout(() => btn.innerText = "2. คัดลอก Prompt", 3000);
-        });
-    }
-
-    // ==========================================
-    // ส่วนที่ 2: ระบบจำลองทำข้อสอบ (User UI)
-    // ==========================================
-    
-    let currentMode = 'immediate'; // 'immediate' หรือ 'batch'
-    
-    // ตัวอย่างข้อสอบจำลอง
-    const mockQuestions = [
-        {
-            q: "Who ____ you?",
-            options: { a: "is", b: "are", c: "were", d: "was" },
-            ans: "b",
-            exp: "เพราะ you เป็นพหูพจน์ ต้องใช้คู่กับ are (Who are you? = คุณคือใคร)"
-        },
-        {
-            q: "He ____ a good student.",
-            options: { a: "is", b: "am", c: "are", d: "be" },
-            ans: "a",
-            exp: "ประธาน He เป็นเอกพจน์บุรุษที่ 3 ต้องใช้ is"
-        }
-    ];
-
-    function startQuiz(mode) {
-        currentMode = mode;
-        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-        document.getElementById('view-quiz').classList.add('active');
-        renderQuiz();
-    }
-
-    function renderQuiz() {
-        const container = document.getElementById('quiz-container');
-        container.innerHTML = ''; // Clear old
-
-        mockQuestions.forEach((item, index) => {
-            const qDiv = document.createElement('div');
-            qDiv.className = 'question-card';
+      <div className="space-y-6">
+        {quiz.questions.map((q, index) => (
+          <div key={q.id} className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm relative overflow-hidden">
+            <div className="absolute top-6 right-6">
+               <span className="text-[11px] font-black text-slate-400 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 uppercase tracking-widest shadow-sm">ข้อ {index + 1}</span>
+            </div>
+            <h3 className="text-xl font-black text-slate-800 leading-relaxed mb-8 pr-20">{q.text}</h3>
             
-            // สร้างคำถาม
-            let html = `<h4>ข้อ ${index + 1}. ${item.q}</h4><ul class="options-list">`;
-            
-            // สร้างตัวเลือก
-            for (const [key, value] of Object.entries(item.options)) {
-                html += `<li class="option-item" onclick="selectOption(${index}, '${key}', this)">
-                            ${key.toUpperCase()}. ${value}
-                         </li>`;
-            }
-            html += `</ul>`;
-            
-            // สร้างกล่องเฉลย (ซ่อนไว้ก่อน)
-            html += `<div class="explanation-box" id="exp-${index}">
-                        <strong>คำตอบที่ถูกคือ: ${item.ans.toUpperCase()}</strong><br>
-                        คำอธิบาย: ${item.exp}
-                     </div>`;
-                     
-            qDiv.innerHTML = html;
-            container.appendChild(qDiv);
-        });
+            <QuestionRenderer q={q} answers={record.answers || {}} matchingAnswers={record.matchingAnswers || {}} isQuestionLocked={true} />
 
-        // ถ้าเป็นโหมดทำเสร็จค่อยเฉลย ให้โชว์ปุ่มส่งคำตอบ
-        if (currentMode === 'batch') {
-            document.getElementById('submit-quiz-btn').style.display = "block";
-        }
-    }
+            {record.confidences && record.confidences[q.id] && (
+               <div className="mt-8 flex items-center gap-3 text-[11px] font-black text-slate-500 bg-slate-50 w-fit px-4 py-2.5 rounded-xl border border-slate-100 uppercase tracking-widest">
+                 <span>ความมั่นใจ:</span> 
+                 {record.confidences[q.id] === 'confident' ? <span className="text-blue-600 flex items-center gap-1.5"><CheckCircle className="w-4 h-4"/> มั่นใจ 100%</span> : <span className="text-amber-600 flex items-center gap-1.5"><AlertCircle className="w-4 h-4"/> เดา</span>}
+               </div>
+            )}
 
-    // ฟังก์ชันเมื่อผู้ใช้คลิกเลือกคำตอบ
-    function selectOption(qIndex, selectedKey, element) {
-        const parentUl = element.parentElement;
-        const qData = mockQuestions[qIndex];
-        
-        // ถ้าเฉลยไปแล้ว ไม่ให้กดซ้ำ
-        if (parentUl.classList.contains('locked')) return;
+            {q.explanation && (
+              <div className="mt-6 p-5 sm:p-6 bg-gradient-to-r from-emerald-50 to-green-50/50 rounded-2xl border-2 border-emerald-100 text-sm text-slate-700 shadow-inner">
+                <span className="font-black text-emerald-600 flex items-center gap-2 mb-2 uppercase tracking-widest text-[11px]"><CheckCircle className="w-4 h-4"/> คำอธิบายเฉลย</span>
+                <p className="leading-relaxed font-semibold opacity-90">{q.explanation}</p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-center pt-4">
+         <button onClick={onBack} className="bg-slate-800 hover:bg-slate-700 text-white font-black px-10 py-4 rounded-2xl shadow-xl transition-all transform active:scale-95 uppercase tracking-widest text-sm">กลับสู่หน้ารวมประวัติ</button>
+      </div>
+    </div>
+  );
+}
 
-        // ล้างสีที่เคยเลือกก่อนหน้า
-        Array.from(parentUl.children).forEach(li => li.classList.remove('selected'));
-        element.classList.add('selected');
+// --- Quiz Builder ---
+function QuizBuilder({ user, onSave, onCancel }) {
+  const [title, setTitle] = useState(''); const [description, setDescription] = useState(''); const [isPublic, setIsPublic] = useState(true); const [questions, setQuestions] = useState([]);
+  const addQuestion = (type) => {
+    playSound('click'); let newQ = { id: 'new_' + Date.now(), type, text: '', explanation: '' };
+    if (type === 'mcq') { newQ.options = [{key:'A', text:''}, {key:'B', text:''}, {key:'C', text:''}, {key:'D', text:''}]; newQ.correctAnswer = 'A'; }
+    else if (type === 'tf') { newQ.correctAnswer = 'True'; } else if (type === 'matching') { newQ.pairs = [{ id: Date.now(), prompt: '', answer: '' }]; }
+    setQuestions([...questions, newQ]); window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  };
+  const updateQuestion = (id, field, value) => setQuestions(questions.map(q => q.id === id ? { ...q, [field]: value } : q));
+  const removeQuestion = (id) => { if(window.confirm("ต้องการลบข้อนี้ทิ้งหรือไม่?")) setQuestions(questions.filter(q => q.id !== id)); };
+  const handleSave = () => {
+    if (!title.trim()) return alert("กรุณาตั้งชื่อชุดข้อสอบ"); if (questions.length === 0) return alert("กรุณาเพิ่มข้อสอบอย่างน้อย 1 ข้อ");
+    const finalQuestions = questions.map((q, idx) => {
+      let finalQ = { ...q, id: `q_${Date.now()}_${idx}` };
+      if (q.type === 'matching') {
+        const subQs = q.pairs.map((p, i) => ({ id: i+1, text: p.prompt })); const opts = q.pairs.map((p, i) => ({ letter: String.fromCharCode(65+i), text: p.answer }));
+        const correct = {}; q.pairs.forEach((p, i) => { correct[i+1] = String.fromCharCode(65+i); });
+        finalQ = { ...finalQ, questions: subQs, options: opts, correctAnswers: correct }; delete finalQ.pairs;
+      }
+      return finalQ;
+    });
+    onSave({ id: 'quiz_' + Date.now(), title, description, author: user.name, isPublic, questions: finalQuestions });
+  };
 
-        // บันทึกคำตอบไว้ใน tag ตัวเลือก
-        parentUl.dataset.selected = selectedKey;
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto animate-fade-in-up">
+      <div className="bg-white rounded-[2rem] p-6 lg:p-10 border border-slate-200 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+        <h2 className="text-3xl font-black text-slate-800 mb-8 flex items-center gap-3"><Edit className="w-8 h-8 text-blue-600"/> สร้างชุดข้อสอบใหม่</h2>
+        <div className="space-y-6 relative z-10">
+          <div>
+            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">ชื่อชุดข้อสอบ *</label>
+            <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="เช่น แบบทดสอบปลายภาค วิทย์ ม.3" className="w-full px-5 py-4 bg-slate-50/50 border-2 border-slate-100 focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all font-bold text-slate-700 shadow-inner" />
+          </div>
+          <div>
+            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">รายละเอียด / คำชี้แจง</label>
+            <textarea rows="2" value={description} onChange={e => setDescription(e.target.value)} placeholder="คำอธิบายเพิ่มเติมสำหรับการทำข้อสอบ..." className="w-full px-5 py-4 bg-slate-50/50 border-2 border-slate-100 focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all text-sm font-medium resize-none shadow-inner" />
+          </div>
+          <div className="flex items-center gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-100 shadow-sm w-fit">
+            <div className="relative inline-flex items-center">
+              <input type="checkbox" id="isPublicToggle" className="sr-only peer" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} />
+              <div className="w-12 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600 shadow-inner"></div>
+            </div>
+            <label htmlFor="isPublicToggle" className="text-sm font-black text-slate-700 cursor-pointer flex flex-col uppercase tracking-wider">
+              เผยแพร่สาธารณะ (Public)
+              <span className="text-[10px] text-slate-400 font-bold capitalize mt-0.5">ทุกคนสามารถเห็นและทำข้อสอบนี้ได้</span>
+            </label>
+          </div>
+        </div>
+      </div>
 
-        // ถ้าเป็นโหมด "เฉลยทันที" (immediate)
-        if (currentMode === 'immediate') {
-            parentUl.classList.add('locked'); // ล็อคไม่ให้กดเปลี่ยน
-            
-            // ตรวจคำตอบ
-            if (selectedKey === qData.ans) {
-                element.classList.add('correct');
-            } else {
-                element.classList.add('wrong');
-                // ไฮไลต์ข้อที่ถูกด้วย
-                const correctEl = Array.from(parentUl.children).find(li => li.innerText.startsWith(qData.ans.toUpperCase()));
-                if(correctEl) correctEl.classList.add('correct');
-            }
-            
-            // โชว์คำอธิบาย
-            document.getElementById(`exp-${qIndex}`).style.display = "block";
-        }
-    }
+      {questions.map((q, index) => (
+        <div key={q.id} className="bg-white rounded-[2rem] p-6 lg:p-10 border border-slate-200 shadow-sm relative">
+          <button onClick={() => removeQuestion(q.id)} className="absolute top-8 right-8 text-slate-400 hover:text-white hover:bg-red-500 p-2.5 rounded-xl transition-all shadow-sm"><Trash2 className="w-5 h-5" /></button>
+          <div className="mb-6 pr-16">
+            <span className="bg-blue-600 text-white text-[11px] font-black px-4 py-2 rounded-xl uppercase tracking-widest shadow-md">ข้อ {index + 1} - {q.type.toUpperCase()}</span>
+          </div>
+          <div className="space-y-6">
+            <div>
+              <label className="block text-[11px] font-black text-slate-500 mb-3 uppercase tracking-widest ml-1">โจทย์คำถาม</label>
+              <input type="text" value={q.text} onChange={e => updateQuestion(q.id, 'text', e.target.value)} placeholder="พิมพ์โจทย์ที่นี่..." className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 focus:border-blue-400 focus:bg-white rounded-2xl text-base font-bold outline-none transition-all shadow-inner" />
+            </div>
+             {q.type === 'mcq' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
+                {q.options.map((opt, oIndex) => (
+                  <div key={opt.key} className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${q.correctAnswer === opt.key ? 'border-emerald-400 bg-emerald-50/80 shadow-sm' : 'border-transparent bg-white hover:border-slate-200'}`}>
+                    <input type="radio" name={`correct_${q.id}`} checked={q.correctAnswer === opt.key} onChange={() => updateQuestion(q.id, 'correctAnswer', opt.key)} className="w-5 h-5 accent-emerald-500 cursor-pointer" />
+                    <span className="font-black text-slate-500 w-5 text-center text-lg">{opt.key}</span>
+                    <input type="text" placeholder={`ตัวเลือก ${opt.key}`} value={opt.text} onChange={e => { const newOpts = [...q.options]; newOpts[oIndex].text = e.target.value; updateQuestion(q.id, 'options', newOpts); }} className="flex-1 px-4 py-3 bg-white border border-slate-200 focus:border-blue-400 rounded-xl text-sm font-semibold outline-none shadow-sm transition-colors" />
+                  </div>
+                ))}
+              </div>
+            )}
+            {q.type === 'tf' && (
+              <div className="flex flex-col sm:flex-row gap-4 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
+                <label className={`flex-1 p-5 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-3 font-black text-lg justify-center ${q.correctAnswer === 'True' ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
+                  <input type="radio" checked={q.correctAnswer === 'True'} onChange={() => updateQuestion(q.id, 'correctAnswer', 'True')} className="hidden" />✔️ True (ถูก)
+                </label>
+                <label className={`flex-1 p-5 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-3 font-black text-lg justify-center ${q.correctAnswer === 'False' ? 'border-red-500 bg-red-50 text-red-700 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
+                  <input type="radio" checked={q.correctAnswer === 'False'} onChange={() => updateQuestion(q.id, 'correctAnswer', 'False')} className="hidden" />❌ False (ผิด)
+                </label>
+              </div>
+            )}
+             {q.type === 'matching' && (
+              <div className="space-y-4 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
+                {q.pairs.map((pair, pIdx) => (
+                  <div key={pair.id} className="flex flex-col sm:flex-row gap-3 items-center bg-white p-3 rounded-2xl border border-slate-200 shadow-sm relative">
+                    <span className="hidden sm:block text-xs font-black text-slate-400 w-5 text-center">{pIdx+1}.</span>
+                    <input type="text" value={pair.prompt} placeholder="โจทย์ฝั่งซ้าย" onChange={e => { const newP = [...q.pairs]; newP[pIdx].prompt = e.target.value; updateQuestion(q.id, 'pairs', newP); }} className="w-full sm:flex-1 px-4 py-3 bg-slate-50 border border-slate-200 focus:border-blue-400 rounded-xl text-sm font-bold shadow-inner outline-none transition-colors" />
+                    <span className="text-slate-300 hidden sm:block"><ArrowRight className="w-5 h-5"/></span>
+                    <input type="text" value={pair.answer} placeholder="คำตอบฝั่งขวา (ที่ถูก)" onChange={e => { const newP = [...q.pairs]; newP[pIdx].answer = e.target.value; updateQuestion(q.id, 'pairs', newP); }} className="w-full sm:flex-1 px-4 py-3 bg-slate-50 border border-slate-200 focus:border-blue-400 rounded-xl text-sm font-bold shadow-inner outline-none transition-colors" />
+                    <button onClick={() => { const newP = q.pairs.filter((_,i) => i !== pIdx); updateQuestion(q.id, 'pairs', newP);}} className="absolute -top-2 -right-2 sm:relative sm:top-0 sm:right-0 bg-white sm:bg-transparent border sm:border-0 rounded-full sm:rounded-none text-slate-400 hover:text-red-500 p-1.5 transition-colors"><X className="w-4 h-4"/></button>
+                  </div>
+                ))}
+                <button onClick={() => updateQuestion(q.id, 'pairs', [...q.pairs, { id: Date.now(), prompt: '', answer: '' }])} className="text-[11px] font-black text-blue-600 mt-2 bg-blue-50 hover:bg-blue-100 px-4 py-2.5 rounded-xl transition-colors inline-flex items-center gap-1.5 uppercase tracking-widest shadow-sm"><Plus className="w-4 h-4"/> เพิ่มคู่ใหม่</button>
+              </div>
+            )}
+            <div>
+              <label className="block text-[11px] font-black text-slate-500 mb-3 uppercase tracking-widest ml-1">คำอธิบายเฉลย (แสดงหลังทำข้อสอบ)</label>
+              <textarea rows="2" value={q.explanation} onChange={e => updateQuestion(q.id, 'explanation', e.target.value)} placeholder="อธิบายเหตุผลของคำตอบข้อนี้..." className="w-full px-5 py-4 bg-emerald-50/50 border-2 border-emerald-100 focus:border-emerald-400 focus:bg-emerald-50 rounded-2xl text-sm font-medium outline-none transition-all resize-none shadow-inner" />
+            </div>
+          </div>
+        </div>
+      ))}
 
-    // ฟังก์ชันเมื่อกดส่งคำตอบ (สำหรับโหมด batch)
-    function submitBatchQuiz() {
-        const lists = document.querySelectorAll('.options-list');
-        let score = 0;
+      <div className="bg-white/50 backdrop-blur-md border-2 border-dashed border-blue-300 rounded-[2rem] p-10 text-center hover:bg-white hover:border-blue-400 transition-all shadow-sm">
+        <h3 className="text-sm font-black text-blue-700 mb-6 uppercase tracking-widest flex items-center justify-center gap-2"><Plus className="w-5 h-5"/> เพิ่มข้อสอบใหม่</h3>
+        <div className="flex flex-wrap justify-center gap-4">
+          <button onClick={() => addQuestion('mcq')} className="bg-white border-2 border-slate-200 hover:border-blue-500 hover:text-blue-600 text-slate-700 font-black py-3 px-6 rounded-xl shadow-sm text-sm transition-all transform active:scale-95">ปรนัย (4 ตัวเลือก)</button>
+          <button onClick={() => addQuestion('tf')} className="bg-white border-2 border-slate-200 hover:border-blue-500 hover:text-blue-600 text-slate-700 font-black py-3 px-6 rounded-xl shadow-sm text-sm transition-all transform active:scale-95">ถูก / ผิด</button>
+          <button onClick={() => addQuestion('matching')} className="bg-white border-2 border-slate-200 hover:border-blue-500 hover:text-blue-600 text-slate-700 font-black py-3 px-6 rounded-xl shadow-sm text-sm transition-all transform active:scale-95">จับคู่</button>
+        </div>
+      </div>
+      
+      <div className="flex justify-end gap-4 pt-8 pb-12">
+        <button onClick={onCancel} className="px-8 py-4 font-black text-slate-500 hover:bg-slate-100 rounded-2xl transition-colors uppercase tracking-widest text-sm">ยกเลิก</button>
+        <button onClick={handleSave} className="bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-blue-600 text-white font-black px-10 py-4 rounded-2xl shadow-xl shadow-blue-500/30 transform active:scale-95 transition-all uppercase tracking-widest text-sm">
+          บันทึกชุดข้อสอบ
+        </button>
+      </div>
+    </div>
+  );
+}
 
-        lists.forEach((ul, index) => {
-            const selectedKey = ul.dataset.selected;
-            const qData = mockQuestions[index];
-            
-            ul.classList.add('locked'); // ล็อคการกด
+// --- INITIAL DATA ---
+const INITIAL_QUIZZES = [
+  {
+    id: 'inazuma_ffi_01',
+    title: 'บททดสอบระดับพระกาฬ: Inazuma Japan (ภาค FFI)',
+    description: 'ทดสอบความรู้ระดับแฟนพันธุ์แท้เกี่ยวกับการแข่งขันฟุตบอลฟรอนเทียร์อินเตอร์เนชันแนล',
+    author: 'Admin',
+    isPublic: true,
+    questions: [
+      { id: 'q1', type: 'mcq', text: 'ท่าไม้ตายผสานที่ใช้ทำประตูสุดท้ายเพื่อเอาชนะทีม Little Gigant ในรอบชิงชนะเลิศคือท่าอะไร?', options: [{ key: 'A', text: 'The Earth' }, { key: 'B', text: 'Grand Fire' }, { key: 'C', text: 'Jet Stream' }, { key: 'D', text: 'Big Bang' }], correctAnswer: 'C', explanation: 'Jet Stream เป็นท่าผสาน 3 คนระหว่าง เอนโด, โกเอนจิ และ โทระมารุ (ตอนแรกฮิโรโตะลองฝึกแต่ไม่สำเร็จ)' },
+      { id: 'q2', type: 'tf', text: 'คุโด มิจิยะ (Kudou Michiya) ดำรงตำแหน่งเป็นโค้ชหลักของ Inazuma Japan ตลอดการแข่งขัน FFI ตั้งแต่ต้นจนจบโดยไม่มีการเปลี่ยนตัว', correctAnswer: 'False', explanation: 'ผิดครับ ในช่วงรอบคัดเลือกโซนเอเชีย โค้ชคุโดถูกสมาคมฟุตบอลสั่งพักงานชั่วคราว ทำให้ โค้ชฮิบิกิ ต้องเข้ามาคุมทีมแทนในนัดที่เจอกับ Fire Dragon' },
+      { id: 'q3', type: 'matching', text: 'จงจับคู่กัปตันทีมชาติ กับ ประเทศต้นสังกัดในการแข่งขัน FFI', questions: [{ id: 1, text: 'Fidio Aldena (ฟิดิโอ)' }, { id: 2, text: 'Edgar Valtinas (เอดการ์)' }, { id: 3, text: 'Teres Tolue (เทเรส)' }, { id: 4, text: 'Mac Roniejo (แมค โลนิโจ)' }], options: [{ letter: 'A', text: 'Argentina' }, { letter: 'B', text: 'Brazil' }, { letter: 'C', text: 'Italy' }, { letter: 'D', text: 'England' }], correctAnswers: { '1':'C', '2':'D', '3':'A', '4':'B' }, explanation: 'ฟิดิโอ=อิตาลี, เอดการ์=อังกฤษ, เทเรส=อาร์เจนตินา, แมค=บราซิล' },
+      { id: 'q4', type: 'mcq', text: 'ใครคือผู้เล่นที่ถูกคัดออกจากทีม Inazuma Japan (บาดเจ็บ/สภาพร่างกายไม่ไหว) และไม่ได้ไปแข่งขันรอบสุดท้ายที่เกาะไลโอคอท?', options: [{ key: 'A', text: 'Someoka Ryuugo' }, { key: 'B', text: 'Midorikawa Ryuuji' }, { key: 'C', text: 'Fubuki Shirou' }, { key: 'D', text: 'Tsunami Jousuke' }], correctAnswer: 'B', explanation: 'มิโดริคาวะ รุยจิ ถอนตัวจากทีมเนื่องจากร่างกายรับการฝึกหนักไม่ไหว ส่วนฟุบุกิเจ็บแต่ได้กลับมาแข่งใหม่' }
+    ]
+  }
+];
 
-            if (!selectedKey) {
-                // ถ้าไม่ตอบเลย ไฮไลต์ข้อถูกไปเลย
-                const correctEl = Array.from(ul.children).find(li => li.innerText.startsWith(qData.ans.toUpperCase()));
-                if(correctEl) correctEl.classList.add('correct');
-            } else if (selectedKey === qData.ans) {
-                // ตอบถูก
-                score++;
-                ul.querySelector('.selected').classList.add('correct');
-            } else {
-                // ตอบผิด
-                ul.querySelector('.selected').classList.add('wrong');
-                const correctEl = Array.from(ul.children).find(li => li.innerText.startsWith(qData.ans.toUpperCase()));
-                if(correctEl) correctEl.classList.add('correct');
-            }
 
-            // เปิดคำอธิบายทุกข้อ
-            document.getElementById(`exp-${index}`).style.display = "block";
-        });
-
-        // ซ่อนปุ่มส่งคำตอบ และแจ้งคะแนน
-        document.getElementById('submit-quiz-btn').style.display = "none";
-        alert(`คุณทำได้ ${score} / ${mockQuestions.length} คะแนน!`);
-    }
-
-</script>
-
-</body>
-</html>
+```
