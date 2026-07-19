@@ -1,1131 +1,655 @@
-```react
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  User, BookOpen, CheckCircle, Plus, Trash2, Award, 
-  ArrowRight, ArrowLeft, LogOut, List, Eye, ShieldAlert, 
-  Clock, History, Save, Edit, Play, PauseCircle, BarChart3, 
-  AlertCircle, Check, Lock, Globe, TrendingUp, X, ChevronRight,
-  Trophy, ArrowUp, Crown
-} from 'lucide-react';
-
-/* =========================================
-   1. CSS Animations & Custom Styles (Inject)
-   ========================================= */
-const GlobalStyles = () => (
-  <style dangerouslySetInnerHTML={{__html: `
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: #f8fafc; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate South America & Earth Science Master</title>
     
-    /* Smooth Scroll */
-    html { scroll-behavior: smooth; }
-
-    /* Animations */
-    @keyframes gradient-x {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-    .animate-gradient-x {
-      background-size: 200% 200%;
-      animation: gradient-x 4s ease infinite;
-    }
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-8px); }
-    }
-    .animate-float { animation: float 3s ease-in-out infinite; }
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    @keyframes fade-in-up {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fade-in-up { animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    .custom-scrollbar::-webkit-scrollbar { height: 6px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #93c5fd; }
-  `}} />
-);
-
-/* =========================================
-   2. ระบบเสียง (Web Audio API)
-   ========================================= */
-const playSound = (type) => {
-  try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    osc.connect(gainNode); gainNode.connect(ctx.destination);
-
-    if (type === 'click' || type === 'next') {
-      osc.type = 'sine'; osc.frequency.setValueAtTime(600, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.1);
-      gainNode.gain.setValueAtTime(0.05, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.1);
-    } else if (type === 'success') {
-      osc.type = 'triangle'; osc.frequency.setValueAtTime(440, ctx.currentTime);
-      osc.frequency.setValueAtTime(554.37, ctx.currentTime + 0.1); osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.2); 
-      gainNode.gain.setValueAtTime(0.05, ctx.currentTime); gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
-      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
-    }
-  } catch (e) { console.error(e); }
-};
-
-/* =========================================
-   3. Main App Component
-   ========================================= */
-export default function App() {
-  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('PFM_USER')) || null);
-  const [quizzes, setQuizzes] = useState(() => JSON.parse(localStorage.getItem('PFM_QUIZZES')) || INITIAL_QUIZZES);
-  const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('PFM_HISTORY')) || []);
-  const [savedExam, setSavedExam] = useState(() => JSON.parse(localStorage.getItem('PFM_SAVED_EXAM')) || null);
-  
-  const [activeTab, setActiveTab] = useState('list'); 
-  const [selectedQuizId, setSelectedQuizId] = useState(null);
-  const [examConfig, setExamConfig] = useState(null);
-  const [reviewRecord, setReviewRecord] = useState(null);
-  
-  const [sessionSeconds, setSessionSeconds] = useState(0);
-  const [showScrollTop, setShowScrollTop] = useState(false);
-
-  // --- Effects ---
-  useEffect(() => {
-    const timer = setInterval(() => setSessionSeconds(p => p + 1), 1000);
-    const handleScroll = () => setShowScrollTop(window.scrollY > 300);
-    window.addEventListener('scroll', handleScroll);
-    return () => { clearInterval(timer); window.removeEventListener('scroll', handleScroll); };
-  }, []);
-
-  useEffect(() => { localStorage.setItem('PFM_USER', JSON.stringify(user)); }, [user]);
-  useEffect(() => { localStorage.setItem('PFM_QUIZZES', JSON.stringify(quizzes)); }, [quizzes]);
-  useEffect(() => { localStorage.setItem('PFM_HISTORY', JSON.stringify(history)); }, [history]);
-  useEffect(() => { localStorage.setItem('PFM_SAVED_EXAM', JSON.stringify(savedExam)); }, [savedExam]);
-
-  useEffect(() => {
-    const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;900&display=swap';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
-  }, []);
-
-  // --- Handlers ---
-  const handleLogin = (name, requestedRole) => {
-    if (!name.trim()) return;
-    let finalRole = requestedRole;
-    if (name.trim().toLowerCase() === 'hello') finalRole = 'admin';
-    setUser({ name: name.trim(), role: finalRole });
-    setActiveTab(finalRole === 'admin' ? 'admin' : 'list');
-  };
-
-  const handleLogout = () => { setUser(null); setActiveTab('list'); setReviewRecord(null); };
-
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
-  const navigateTo = (tab) => { playSound('click'); setActiveTab(tab); setReviewRecord(null); scrollToTop(); };
-
-  const startExam = (quizId, mode) => {
-    playSound('click'); setSelectedQuizId(quizId); setExamConfig({ mode }); setActiveTab('exam'); scrollToTop();
-  };
-  const resumeExam = () => {
-    playSound('click'); setSelectedQuizId(savedExam.quizId); setExamConfig({ mode: savedExam.mode }); setActiveTab('exam'); scrollToTop();
-  };
-
-  // --- Quiz Management ---
-  const toggleQuizVisibility = (quizId) => {
-    playSound('click');
-    setQuizzes(quizzes.map(q => q.id === quizId ? { ...q, isPublic: !q.isPublic } : q));
-  };
-  const deleteQuiz = (quizId) => {
-    if(window.confirm('คุณต้องการลบชุดข้อสอบนี้ใช่หรือไม่?')) {
-      playSound('click'); setQuizzes(quizzes.filter(q => q.id !== quizId));
-    }
-  };
-  const handleSaveNewQuiz = (newQuiz) => {
-    setQuizzes([newQuiz, ...quizzes]); setActiveTab('list'); scrollToTop();
-  };
-
-  // --- History Management ---
-  const clearUserHistory = () => {
-    if(window.confirm('ยืนยันการลบประวัติการสอบของคุณทั้งหมด?')) {
-      playSound('click');
-      setHistory(prev => prev.filter(h => h.user !== user.name));
-      setReviewRecord(null);
-    }
-  };
-  const clearGlobalHistory = () => {
-    if(window.confirm('ยืนยันล้างประวัติผู้ใช้งานทั้งหมดในระบบ? (ไม่สามารถกู้คืนได้)')) {
-      playSound('click'); setHistory([]);
-    }
-  };
-
-  const formatTime = (secs) => {
-    const h = Math.floor(secs / 3600); const m = Math.floor((secs % 3600) / 60); const s = secs % 60;
-    return `${h > 0 ? h + 'h ' : ''}${m}m ${s}s`;
-  };
-
-  return (
-    <div style={{ fontFamily: "'Kanit', sans-serif" }} className="min-h-screen bg-slate-50 text-slate-800 flex flex-col selection:bg-blue-200">
-      <GlobalStyles />
-      
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200 shadow-sm sticky top-0 z-50 transition-all">
-        <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3 sm:gap-4 cursor-pointer group" onClick={() => user && navigateTo('list')}>
-            <div className="bg-gradient-to-br from-blue-600 to-sky-400 p-2.5 sm:p-3 rounded-2xl text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform duration-300">
-              <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 animate-float" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-black bg-gradient-to-r from-blue-700 via-sky-500 to-blue-700 animate-gradient-x bg-clip-text text-transparent leading-none tracking-tight">
-                PAY FOR MARK
-              </h1>
-              <p className="text-[10px] sm:text-[11px] text-slate-500 font-bold tracking-[0.2em] uppercase mt-1">Smart Examination</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-100 px-4 py-2 rounded-full border border-slate-200 shadow-inner">
-              <Clock className="w-4 h-4 text-blue-500" /> {formatTime(sessionSeconds)}
-            </div>
-
-            {user && (
-              <div className="flex items-center gap-3 bg-white p-1.5 pr-4 rounded-full border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-black text-sm shadow-inner text-white ${
-                  user.role === 'admin' ? 'bg-gradient-to-tr from-red-600 to-rose-400' : 
-                  user.role === 'teacher' ? 'bg-gradient-to-tr from-amber-500 to-orange-400' : 
-                  'bg-gradient-to-tr from-blue-600 to-sky-400'
-                }`}>
-                  {user.name[0].toUpperCase()}
-                </div>
-                <div className="text-left leading-tight hidden sm:block">
-                  <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
-                    {user.role === 'admin' ? '🛡️ Admin' : user.role === 'teacher' ? '👑 Teacher' : '📝 Student'}
-                  </p>
-                  <p className="text-xs font-bold text-slate-700 truncate max-w-[100px]">{user.name}</p>
-                </div>
-                <button onClick={handleLogout} className="ml-1 text-slate-400 hover:text-red-500 transition-colors p-1.5 rounded-full hover:bg-red-50">
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col">
-        {!user ? (
-          <LoginScreen onLogin={handleLogin} />
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8 relative items-start">
-            
-            {/* Sidebar Navigation */}
-            <div className="lg:col-span-1 space-y-4 lg:sticky lg:top-[104px]">
-              <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/80">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 mb-4">Main Menu</h3>
-                <nav className="space-y-2">
-                  <NavButton active={activeTab === 'list'} onClick={() => navigateTo('list')} icon={<List className="w-5 h-5" />} text="คลังข้อสอบ" />
-                  <NavButton active={activeTab === 'ranking'} onClick={() => navigateTo('ranking')} icon={<Trophy className="w-5 h-5" />} text="จัดอันดับ" />
-                  {(user.role === 'student' || user.role === 'teacher' || user.role === 'admin') && (
-                    <NavButton active={activeTab === 'history'} onClick={() => navigateTo('history')} icon={<History className="w-5 h-5" />} text="ประวัติส่วนตัว" />
-                  )}
-                  {(user.role === 'teacher' || user.role === 'admin') && (
-                    <NavButton active={activeTab === 'create'} onClick={() => navigateTo('create')} icon={<Edit className="w-5 h-5" />} text="สร้างข้อสอบใหม่" />
-                  )}
-                  {user.role === 'admin' && (
-                    <NavButton active={activeTab === 'admin'} onClick={() => navigateTo('admin')} icon={<ShieldAlert className="w-5 h-5" />} text="Admin Dashboard" highlight={true} />
-                  )}
-                </nav>
-              </div>
-            </div>
-
-            {/* Dashboard Content */}
-            <div className="lg:col-span-3 pb-20">
-              
-              {/* RESUME BANNER */}
-              {activeTab === 'list' && savedExam && savedExam.user === user.name && (
-                <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl p-6 shadow-lg shadow-orange-500/20 text-white mb-8 flex flex-col sm:flex-row justify-between items-center gap-5 animate-fade-in-up">
-                  <div>
-                    <h3 className="text-xl font-black flex items-center gap-2 drop-shadow-sm"><PauseCircle className="w-6 h-6 animate-pulse"/> คุณมีข้อสอบที่ทำค้างไว้!</h3>
-                    <p className="text-sm opacity-90 mt-1 font-medium">วิชา: {savedExam.quizTitle} (ทำถึงข้อที่ {savedExam.currentIndex + 1})</p>
-                  </div>
-                  <div className="flex gap-3 w-full sm:w-auto">
-                    <button onClick={() => { playSound('click'); setSavedExam(null); }} className="flex-1 sm:flex-none bg-black/10 hover:bg-black/20 px-5 py-3 rounded-xl text-sm font-bold transition">ทิ้งข้อสอบ</button>
-                    <button onClick={resumeExam} className="flex-1 sm:flex-none bg-white text-orange-600 hover:bg-orange-50 px-8 py-3 rounded-xl text-sm font-black shadow-md transition transform active:scale-95 flex items-center justify-center gap-2">
-                      <Play className="w-4 h-4 fill-current"/> ทำต่อเลย
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* LIST QUIZZES */}
-              {activeTab === 'list' && (
-                <div className="space-y-6 animate-fade-in-up">
-                  <div>
-                    <h2 className="text-3xl font-black text-slate-800 tracking-tight">คลังข้อสอบออนไลน์</h2>
-                    <p className="text-slate-500 font-medium mt-1">เลือกชุดข้อสอบเพื่อทดสอบความรู้และเก็บคะแนนสะสม</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {quizzes.filter(q => q.isPublic || user.role === 'admin' || q.author === user.name).map((quiz) => {
-                      const canManage = user.role === 'admin' || quiz.author === user.name;
-                      return (
-                        <div key={quiz.id} className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col relative group">
-                          
-                          {canManage && (
-                            <div className="absolute top-5 right-5 flex items-center gap-3 bg-white/90 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-100 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                              <label className="flex items-center gap-2 cursor-pointer">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase">{quiz.isPublic ? 'Public' : 'Private'}</span>
-                                <div className="relative inline-flex items-center">
-                                  <input type="checkbox" className="sr-only peer" checked={quiz.isPublic} onChange={() => toggleQuizVisibility(quiz.id)} />
-                                  <div className="w-8 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                                </div>
-                              </label>
-                              <div className="w-px h-4 bg-slate-200"></div>
-                              <button onClick={() => deleteQuiz(quiz.id)} className="text-slate-400 hover:text-red-500 transition-colors">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          )}
-
-                          <div className="flex-1 pb-5">
-                            <div className="flex items-center gap-2 mb-4">
-                              <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[11px] font-black rounded-lg border border-blue-100 flex items-center gap-1.5">
-                                <List className="w-3.5 h-3.5"/> {quiz.questions.length} ข้อ
-                              </span>
-                              {!quiz.isPublic && (
-                                <span className="px-3 py-1 bg-slate-100 text-slate-600 text-[11px] font-black rounded-lg border border-slate-200 flex items-center gap-1.5">
-                                  <Lock className="w-3.5 h-3.5"/> Private
-                                </span>
-                              )}
-                            </div>
-                            <h3 className="text-xl font-black text-slate-800 leading-snug mb-2 pr-12 group-hover:text-blue-600 transition-colors">{quiz.title}</h3>
-                            <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed mb-5">{quiz.description}</p>
-                            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                              <User className="w-3.5 h-3.5" /> โดย: {quiz.author}
-                            </div>
-                          </div>
-
-                          <div className="flex gap-3 mt-auto pt-5 border-t border-slate-100">
-                            <button onClick={() => startExam(quiz.id, 'batch')} className="flex-1 bg-white text-slate-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 font-bold py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-xs border-2 border-slate-200 transform active:scale-95 shadow-sm">
-                              <BookOpen className="w-4 h-4" /> สอบแบบปกติ
-                            </button>
-                            <button onClick={() => startExam(quiz.id, 'instant')} className="flex-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white font-bold py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-xs border-2 border-emerald-100 hover:border-emerald-500 transform active:scale-95 shadow-sm">
-                              <CheckCircle className="w-4 h-4" /> เฉลยทีละข้อ
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {quizzes.length === 0 && (
-                      <div className="col-span-2 text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200 text-slate-400">
-                        <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-20"/>
-                        <p className="font-bold text-lg text-slate-500">ยังไม่มีชุดข้อสอบในระบบ</p>
-                        {user.role !== 'student' && <p className="text-sm mt-2">ไปที่เมนู "สร้างข้อสอบใหม่" เพื่อเริ่มต้น</p>}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* LEADERBOARD (RANKING) */}
-              {activeTab === 'ranking' && (
-                <div className="space-y-6 animate-fade-in-up">
-                  <div>
-                    <h2 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-                      <Trophy className="w-8 h-8 text-yellow-500" /> ทำเนียบผู้ทำคะแนนสูงสุด
-                    </h2>
-                    <p className="text-slate-500 font-medium mt-1">จัดอันดับจากเปอร์เซ็นต์ความถูกต้องของทุกการสอบ</p>
-                  </div>
-                  
-                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm">
-                    {history.length === 0 ? (
-                      <div className="text-center py-10 text-slate-400 font-bold">ยังไม่มีข้อมูลการสอบในระบบ</div>
-                    ) : (
-                      <Leaderboard history={history} />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* HISTORY & REVIEW */}
-              {activeTab === 'history' && (
-                <div className="space-y-6 animate-fade-in-up">
-                  {reviewRecord ? (
-                    <ReviewRoom record={reviewRecord} onBack={() => { playSound('click'); setReviewRecord(null); scrollToTop(); }} />
-                  ) : (
-                    <>
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
-                        <div>
-                          <h2 className="text-3xl font-black text-slate-800 tracking-tight">ประวัติการสอบของคุณ</h2>
-                          <p className="text-slate-500 font-medium mt-1">วิเคราะห์ความก้าวหน้าและทบทวนข้อผิดพลาด</p>
-                        </div>
-                        <button onClick={clearUserHistory} className="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-500 hover:text-white px-4 py-2.5 rounded-xl border border-red-100 transition-all shadow-sm w-fit">
-                          <Trash2 className="w-4 h-4 inline mr-1"/> ล้างประวัติส่วนตัว
-                        </button>
-                      </div>
-
-                      <ProgressChart history={history} userName={user.name} />
-
-                      <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm min-h-[300px]">
-                        <h3 className="text-lg font-black text-slate-800 flex items-center gap-2 mb-6"><History className="w-5 h-5 text-blue-500"/> ประวัติย้อนหลัง</h3>
-                        
-                        {history.filter(h => h.user === user.name).length === 0 ? (
-                          <div className="text-center text-slate-400 py-16 flex flex-col items-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                            <History className="w-12 h-12 mb-4 opacity-20"/>
-                            <span className="font-bold">คุณยังไม่มีประวัติการทำข้อสอบ</span>
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            {history.filter(h => h.user === user.name).map(record => {
-                              const percent = (record.score / record.maxScore) * 100;
-                              let colorClass = "text-emerald-600 bg-emerald-50 border-emerald-200 shadow-emerald-500/10";
-                              if (percent < 50) colorClass = "text-red-600 bg-red-50 border-red-200 shadow-red-500/10";
-                              else if (percent < 80) colorClass = "text-amber-600 bg-amber-50 border-amber-200 shadow-amber-500/10";
-
-                              return (
-                                <div key={record.id} className="p-5 border border-slate-200 rounded-2xl bg-white hover:border-blue-300 hover:shadow-lg hover:shadow-blue-500/5 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-5 group">
-                                  <div className="flex-1">
-                                    <h4 className="font-black text-slate-800 text-base mb-2 group-hover:text-blue-600 transition-colors">{record.quizTitle}</h4>
-                                    <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-400">
-                                      <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5"/> {record.date}</span>
-                                      <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5"/> {record.mode === 'instant' ? 'เฉลยทันที' : 'แบบปกติ'}</span>
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="flex items-center gap-4 sm:justify-end border-t pt-4 sm:border-0 sm:pt-0 border-slate-100">
-                                    <div className={`px-5 py-2.5 rounded-xl border-2 text-center min-w-[110px] shadow-sm ${colorClass}`}>
-                                      <div className="text-2xl font-black leading-none mb-1">{record.score}<span className="text-sm font-bold opacity-60">/{record.maxScore}</span></div>
-                                      <div className="text-[10px] font-black uppercase tracking-widest opacity-80">{percent.toFixed(0)}%</div>
-                                    </div>
-                                    
-                                    <button onClick={() => { playSound('click'); setReviewRecord(record); scrollToTop(); }} className="h-[60px] w-14 rounded-xl bg-slate-50 hover:bg-blue-600 text-slate-400 hover:text-white border-2 border-slate-200 hover:border-blue-600 flex items-center justify-center transition-all transform active:scale-95 shadow-sm">
-                                      <Eye className="w-6 h-6"/>
-                                    </button>
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* ADMIN DASHBOARD */}
-              {activeTab === 'admin' && user.role === 'admin' && (
-                <div className="space-y-6 animate-fade-in-up">
-                  <h2 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-                    <ShieldAlert className="w-8 h-8 text-red-500" /> Admin Control
-                  </h2>
-                  
-                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
-                    <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2"><BookOpen className="text-blue-500"/> จัดการข้อสอบทั้งหมด</h3>
-                    <div className="overflow-x-auto custom-scrollbar pb-4">
-                      <table className="w-full text-left text-sm text-slate-600 min-w-[600px]">
-                          <thead className="bg-slate-50 text-[11px] uppercase tracking-widest text-slate-400 font-bold border-b border-slate-200">
-                            <tr><th className="px-5 py-4 rounded-tl-xl">Quiz Title</th><th className="px-5 py-4">Author</th><th className="px-5 py-4 text-center">Status</th><th className="px-5 py-4 text-center rounded-tr-xl">Action</th></tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 font-medium">
-                            {quizzes.map(quiz => (
-                              <tr key={quiz.id} className="hover:bg-slate-50/50 transition-colors">
-                                <td className="px-5 py-4 text-slate-800 font-bold">{quiz.title}</td>
-                                <td className="px-5 py-4">{quiz.author}</td>
-                                <td className="px-5 py-4 text-center">
-                                  <button onClick={() => toggleQuizVisibility(quiz.id)} className={`text-[10px] font-black px-3 py-1.5 rounded-lg border-2 transition-colors ${quiz.isPublic ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'}`}>
-                                    {quiz.isPublic ? 'PUBLIC' : 'PRIVATE'}
-                                  </button>
-                                </td>
-                                <td className="px-5 py-4 text-center">
-                                  <button onClick={() => deleteQuiz(quiz.id)} className="p-2 text-slate-400 hover:bg-red-100 hover:text-red-500 rounded-xl transition-colors"><Trash2 className="w-4 h-4" /></button>
-                                </td>
-                              </tr>
-                            ))}
-                            {quizzes.length === 0 && <tr><td colSpan="4" className="text-center py-6 text-slate-400">ไม่มีข้อมูล</td></tr>}
-                          </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
-                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
-                        <h3 className="text-lg font-black text-slate-800 flex items-center gap-2"><Globe className="w-5 h-5 text-blue-500"/> Global History</h3>
-                        <button onClick={clearGlobalHistory} className="text-xs font-bold bg-red-50 border-2 border-red-100 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 px-4 py-2.5 rounded-xl transition-all shadow-sm">ล้างประวัติทั้งระบบ (Danger)</button>
-                    </div>
-                    <div className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
-                        {history.length === 0 && <div className="text-center py-6 text-slate-400">ไม่มีข้อมูล</div>}
-                        {history.map(h => (
-                          <div key={h.id} className="text-sm p-4 border border-slate-100 rounded-2xl bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-white hover:border-blue-200 transition-colors">
-                            <div>
-                              <span className="font-black text-slate-700 bg-white px-3 py-1 rounded-lg border shadow-sm mr-3">{h.user}</span> 
-                              <span className="text-slate-600 font-bold">{h.quizTitle}</span>
-                              <span className="text-[10px] text-slate-400 ml-2">({h.date})</span>
-                            </div> 
-                            <div className="font-black text-blue-600 bg-blue-50 border border-blue-100 px-4 py-1.5 rounded-xl text-center sm:text-right shadow-sm">{h.score} / {h.maxScore}</div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* CREATE QUIZ */}
-              {activeTab === 'create' && (user.role === 'teacher' || user.role === 'admin') && (
-                <QuizBuilder user={user} onSave={handleSaveNewQuiz} onCancel={() => navigateTo('list')} />
-              )}
-              
-              {/* EXAM ROOM */}
-              {activeTab === 'exam' && selectedQuizId && (
-                <ExamRoom 
-                  quiz={quizzes.find(q => q.id === selectedQuizId)} user={user} mode={examConfig?.mode} savedState={savedExam?.quizId === selectedQuizId ? savedExam : null}
-                  onSavePause={(state) => { setSavedExam(state); navigateTo('list'); }}
-                  onFinish={(record) => { setHistory([record, ...history]); setSavedExam(null); }}
-                  onBack={() => navigateTo('list')}
-                />
-              )}
-
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* Scroll to Top FAB */}
-      {showScrollTop && (
-        <button 
-          onClick={scrollToTop} 
-          className="fixed bottom-6 right-6 p-3 bg-blue-600 text-white rounded-full shadow-lg shadow-blue-500/40 hover:bg-blue-700 hover:scale-110 transition-all z-50 animate-fade-in-up"
-        >
-          <ArrowUp className="w-5 h-5"/>
-        </button>
-      )}
-    </div>
-  );
-}
-
-// --- Sub-components ---
-
-function NavButton({ active, onClick, icon, text, highlight }) {
-  return (
-    <button onClick={onClick} className={`w-full flex items-center gap-3 p-3.5 rounded-2xl font-bold transition-all duration-300 text-sm text-left group border-2 ${ 
-      active 
-        ? highlight ? 'bg-gradient-to-r from-red-600 to-rose-500 text-white border-transparent shadow-lg shadow-red-500/20' : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white border-transparent shadow-lg shadow-blue-500/20' 
-        : highlight ? 'text-red-500 hover:bg-red-50 border-transparent hover:border-red-100' : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-100 hover:border-slate-200 hover:shadow-sm' 
-    }`}>
-      <span className={active ? 'text-white' : 'text-slate-400 group-hover:text-current transition-colors'}>{icon}</span> {text}
-      {active && <ChevronRight className="w-4 h-4 ml-auto opacity-70"/>}
-    </button>
-  );
-}
-
-// --- Leaderboard Component ---
-function Leaderboard({ history }) {
-  // Aggregate stats by user
-  const userStats = history.reduce((acc, curr) => {
-    if (!acc[curr.user]) acc[curr.user] = { user: curr.user, totalScore: 0, totalMax: 0, examsTaken: 0 };
-    acc[curr.user].totalScore += curr.score;
-    acc[curr.user].totalMax += curr.maxScore;
-    acc[curr.user].examsTaken += 1;
-    return acc;
-  }, {});
-
-  // Calculate percentage and sort
-  const ranking = Object.values(userStats)
-    .map(s => ({ ...s, percent: (s.totalScore / s.totalMax) * 100 }))
-    .sort((a, b) => b.percent - a.percent);
-
-  return (
-    <div className="space-y-4">
-      {ranking.map((user, index) => {
-        const isTop3 = index < 3;
-        return (
-          <div key={user.user} className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${isTop3 ? 'bg-gradient-to-r from-amber-50 to-orange-50/50 border-amber-200' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
-            <div className={`w-10 h-10 shrink-0 flex items-center justify-center rounded-xl font-black text-lg ${index === 0 ? 'bg-yellow-400 text-white shadow-lg shadow-yellow-500/30' : index === 1 ? 'bg-slate-300 text-white shadow-md' : index === 2 ? 'bg-amber-600 text-white shadow-md' : 'bg-slate-100 text-slate-400'}`}>
-              {index + 1}
-            </div>
-            <div className="flex-1">
-              <h4 className="font-black text-slate-800 text-lg flex items-center gap-2">
-                {user.user} {index === 0 && <Crown className="w-4 h-4 text-yellow-500"/>}
-              </h4>
-              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">ทำสอบไปแล้ว {user.examsTaken} ครั้ง</p>
-            </div>
-            <div className="text-right">
-              <div className={`text-2xl font-black ${isTop3 ? 'text-amber-600' : 'text-blue-600'}`}>{user.percent.toFixed(1)}%</div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{user.totalScore} / {user.totalMax} pts</div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function ProgressChart({ history, userName }) {
-  const userHistory = history.filter(h => h.user === userName).slice(0, 10).reverse();
-  if (userHistory.length < 2) return null;
-
-  const width = 800; const height = 180; const padding = 30;
-  const points = userHistory.map((h, i) => {
-    const x = padding + (i * ((width - padding * 2) / (userHistory.length - 1)));
-    const percent = (h.score / h.maxScore);
-    const y = height - padding - (percent * (height - padding * 2));
-    return { x, y, percent, title: h.quizTitle };
-  });
-  const pathD = `M ${points.map(p => `${p.x},${p.y}`).join(' L ')}`;
-  const areaD = `${pathD} L ${points[points.length-1].x},${height-padding} L ${points[0].x},${height-padding} Z`;
-
-  return (
-    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm mb-6 relative overflow-hidden group">
-      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-sky-400 to-emerald-400"></div>
-      <h3 className="text-sm font-black text-slate-700 flex items-center gap-2 mb-6 uppercase tracking-widest"><TrendingUp className="w-5 h-5 text-emerald-500"/> พัฒนาการ 10 ครั้งล่าสุด</h3>
-      
-      <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
-        <div style={{ minWidth: '600px' }}>
-          <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
-            {[0, 0.25, 0.5, 0.75, 1].map(ratio => (
-              <g key={ratio}>
-                <line x1={padding} y1={height - padding - (ratio * (height - padding * 2))} x2={width - padding} y2={height - padding - (ratio * (height - padding * 2))} stroke="#f1f5f9" strokeWidth="2" strokeDasharray="6 6" />
-                <text x={padding - 10} y={height - padding - (ratio * (height - padding * 2)) + 4} textAnchor="end" fill="#94a3b8" fontSize="10" fontWeight="bold">{ratio * 100}%</text>
-              </g>
-            ))}
-            <path d={areaD} fill="url(#gradient)" opacity="0.15" />
-            <path d={pathD} fill="none" stroke="#3b82f6" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-md" />
-            {points.map((p, i) => (
-              <g key={i} className="cursor-pointer group/point">
-                <circle cx={p.x} cy={p.y} r="5" fill="#ffffff" stroke="#3b82f6" strokeWidth="3" className="transition-all duration-300 group-hover/point:r-7 group-hover/point:stroke-emerald-500" />
-                <rect x={p.x - 20} y={p.y - 30} width="40" height="20" rx="4" fill="#1e293b" className="opacity-0 group-hover/point:opacity-100 transition-opacity" pointerEvents="none"/>
-                <text x={p.x} y={p.y - 16} textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="bold" className="opacity-0 group-hover/point:opacity-100 transition-opacity" pointerEvents="none">
-                  {Math.round(p.percent * 100)}%
-                </text>
-              </g>
-            ))}
-            <defs>
-              <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#3b82f6" />
-                <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* =========================================
-   Component: Login
-   ========================================= */
-function LoginScreen({ onLogin }) {
-  const [name, setName] = useState('');
-  const [role, setRole] = useState('student');
-  return (
-    <div className="max-w-md w-full mx-auto bg-white/90 backdrop-blur-2xl rounded-[2.5rem] p-8 sm:p-10 shadow-2xl shadow-blue-900/10 border border-white mt-10 sm:mt-20 animate-fade-in-up relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 translate-x-1/2 -translate-y-1/2"></div>
-      <div className="text-center mb-10 relative z-10">
-        <div className="bg-gradient-to-br from-blue-600 to-sky-400 w-20 h-20 rounded-[1.5rem] text-white flex items-center justify-center mx-auto shadow-xl shadow-blue-500/30 mb-5 animate-float">
-          <BookOpen className="w-10 h-10" />
-        </div>
-        <h2 className="text-3xl font-black bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent tracking-tight">เข้าสู่ระบบ</h2>
-        <p className="text-[11px] text-slate-400 mt-2 font-bold uppercase tracking-widest">Pay For Mark Platform</p>
-      </div>
-      <form onSubmit={(e) => { e.preventDefault(); playSound('click'); onLogin(name, role); }} className="space-y-6 relative z-10">
-        <div>
-          <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">ชื่อของคุณ</label>
-          <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="พิมพ์ชื่อเพื่อเข้าใช้งาน (เช่น Hello สำหรับ Admin)" className="w-full px-5 py-4 bg-slate-50/50 border-2 border-slate-100 focus:border-blue-500 focus:bg-white outline-none rounded-2xl text-sm font-bold text-slate-700 transition-all shadow-inner" />
-        </div>
-        {name.trim().toLowerCase() !== 'hello' && (
-          <div className="animate-fade-in-up">
-            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">เลือกสิทธิ์การใช้งาน</label>
-            <div className="relative">
-              <select value={role} onChange={e => setRole(e.target.value)} className="w-full px-5 py-4 bg-slate-50/50 border-2 border-slate-100 rounded-2xl text-sm outline-none focus:border-blue-500 focus:bg-white font-bold text-slate-700 transition-all shadow-inner appearance-none cursor-pointer">
-                <option value="student">📝 นักเรียน (ทำข้อสอบ)</option>
-                <option value="teacher">👑 ครู (สร้างข้อสอบ)</option>
-              </select>
-              <ChevronRight className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none rotate-90"/>
-            </div>
-          </div>
-        )}
-        <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-black py-4.5 rounded-2xl shadow-xl shadow-blue-500/30 hover:shadow-blue-600/40 transition-all duration-300 text-sm mt-4 transform active:scale-95 uppercase tracking-wider">
-          เข้าสู่ระบบ
-        </button>
-      </form>
-    </div>
-  );
-}
-
-/* =========================================
-   Component: Exam Room 
-   ========================================= */
-function ExamRoom({ quiz, user, mode = 'batch', savedState, onSavePause, onFinish, onBack }) {
-  const [currentIndex, setCurrentIndex] = useState(savedState?.currentIndex || 0);
-  const [answers, setAnswers] = useState(savedState?.answers || {});
-  const [matchingAnswers, setMatchingAnswers] = useState(savedState?.matchingAnswers || {});
-  const [confidences, setConfidences] = useState(savedState?.confidences || {});
-  const [checkedQuestions, setCheckedQuestions] = useState(savedState?.checkedQuestions || {});
-  
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [showExplanation, setShowExplanation] = useState({});
-  const [examResult, setExamResult] = useState(null);
-
-  const q = quiz.questions[currentIndex];
-  const totalQuestions = quiz.questions.length;
-  const isLastQuestion = currentIndex === totalQuestions - 1;
-
-  const handleSelect = (qId, option) => { if (isSubmitted || checkedQuestions[qId]) return; playSound('click'); setAnswers(prev => ({ ...prev, [qId]: option })); };
-  const handleMatching = (qId, subQId, letter) => { if (isSubmitted || checkedQuestions[qId]) return; playSound('click'); setMatchingAnswers(prev => ({ ...prev, [qId]: { ...(prev[qId] || {}), [subQId]: letter } })); };
-  const handleConfidence = (qId, val) => { if (isSubmitted || checkedQuestions[qId]) return; playSound('click'); setConfidences(prev => ({ ...prev, [qId]: val })); };
-
-  const handleNav = (direction) => {
-    playSound('next');
-    if (direction === 'next') {
-      if (!confidences[q.id]) return alert("กรุณาระบุระดับความมั่นใจก่อนไปข้อถัดไปครับ");
-      if (!isLastQuestion) { setCurrentIndex(prev => prev + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-    }
-    if (direction === 'prev' && currentIndex > 0) { setCurrentIndex(prev => prev - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-  };
-
-  const handleCheckInstant = () => {
-    if (!confidences[q.id]) return alert("กรุณาระบุความมั่นใจก่อนตรวจคำตอบ");
-    playSound('success'); setCheckedQuestions(prev => ({ ...prev, [q.id]: true })); setShowExplanation(prev => ({ ...prev, [q.id]: true }));
-  };
-
-  const handleSaveAndPause = () => { playSound('click'); onSavePause({ user: user.name, quizId: quiz.id, quizTitle: quiz.title, mode, currentIndex, answers, matchingAnswers, confidences, checkedQuestions }); };
-
-  const handleSubmit = () => {
-    if (!confidences[q.id]) return alert("กรุณาระบุความมั่นใจในข้อสุดท้ายก่อนส่งคำตอบ");
-    playSound('success');
-    let score = 0; let max = 0; let stats = { cc: 0, cw: 0, nc: 0, nw: 0 };
-    quiz.questions.forEach(question => {
-      let isCorrect = false; const conf = confidences[question.id] === 'confident';
-      if (question.type === 'mcq' || question.type === 'tf') {
-        max++; if (answers[question.id] === question.correctAnswer) { score++; isCorrect = true; }
-        if(conf && isCorrect) stats.cc++; else if(conf && !isCorrect) stats.cw++; else if(!conf && isCorrect) stats.nc++; else if(!conf && !isCorrect) stats.nw++;
-      } else if (question.type === 'matching') {
-        let subCorrect = 0;
-        question.questions.forEach(sub => { max++; if (matchingAnswers[question.id]?.[sub.id] === question.correctAnswers[sub.id]) { score++; subCorrect++; } });
-        isCorrect = (subCorrect === question.questions.length);
-        if(conf && isCorrect) stats.cc++; else if(conf && !isCorrect) stats.cw++; else if(!conf && isCorrect) stats.nc++; else if(!conf && !isCorrect) stats.nw++;
-      }
-    });
-
-    setExamResult({ score, maxScore: max, analytics: stats }); setIsSubmitted(true); setCurrentIndex(0); window.scrollTo({ top: 0, behavior: 'smooth' });
-    onFinish({ id: Date.now(), user: user.name, quizId: quiz.id, quizTitle: quiz.title, mode: mode, score, maxScore: max, analytics: stats, date: new Date().toLocaleString('th-TH'), quizSnapshot: quiz, answers, matchingAnswers, confidences });
-  };
-
-  const isQuestionLocked = isSubmitted || checkedQuestions[q.id];
-
-  return (
-    <div className="space-y-6 max-w-4xl mx-auto animate-fade-in-up">
-      {/* Top Bar */}
-      <div className="bg-white/90 backdrop-blur-md rounded-2xl p-4 sm:px-6 border border-slate-200 shadow-sm sticky top-[80px] z-40 flex items-center justify-between">
-        <button onClick={onBack} className="text-[11px] font-black text-slate-400 hover:text-blue-600 flex items-center gap-1.5 transition-colors uppercase tracking-widest bg-slate-50 hover:bg-blue-50 px-3 py-1.5 rounded-lg border border-slate-100">
-          <ArrowLeft className="w-3.5 h-3.5"/> ออก
-        </button>
-        <div className="font-black text-sm text-slate-700 hidden sm:block truncate max-w-[40%]">{quiz.title}</div>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Nunito', 'Kanit', 'sans-serif'] },
+                    colors: {
+                        primary: '#3b82f6', secondary: '#0ea5e9',
+                        success: '#10b981', danger: '#ef4444', warning: '#f59e0b',
+                        dark: '#0f172a', surface: '#f8fafc'
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-in': 'bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards',
+                    },
+                    keyframes: {
+                        bounceIn: {
+                            '0%': { transform: 'scale(0.8)', opacity: 0 },
+                            '100%': { transform: 'scale(1)', opacity: 1 }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); min-height: 100vh; color: #1e293b; overflow-x: hidden; }
+        .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 10px 40px rgba(0,0,0,0.05); }
+        .momentum-glow-0 { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); background: #3b82f6; }
+        .momentum-glow-1 { box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); background: #10b981; }
+        .momentum-glow-2 { box-shadow: 0 0 25px rgba(245, 158, 11, 0.8); background: #f59e0b; }
+        .momentum-glow-3 { box-shadow: 0 0 35px rgba(239, 68, 68, 1); background: #ef4444; }
         
-        <div className="flex gap-2 sm:gap-3 items-center">
-          {!isSubmitted && (
-            <button onClick={handleSaveAndPause} className="text-[11px] font-black text-amber-600 bg-amber-50 hover:bg-amber-100 px-3 py-2 rounded-lg border border-amber-200 transition-colors flex items-center gap-1.5 uppercase tracking-widest shadow-sm">
-              <Save className="w-3.5 h-3.5"/> พักสอบ
-            </button>
-          )}
-          <div className="text-xs font-black bg-gradient-to-r from-blue-600 to-sky-500 text-white px-4 py-2 rounded-lg shadow-md shadow-blue-500/20 tracking-wider">
-            ข้อ {currentIndex + 1} / {totalQuestions}
-          </div>
-        </div>
-      </div>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .option-btn { transition: all 0.2s; }
+        .option-btn:active { transform: scale(0.98); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-      {isSubmitted && examResult && (
-        <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-xl shadow-blue-900/5 flex flex-col lg:flex-row gap-8 items-center justify-between relative overflow-hidden animate-fade-in-up">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-20 translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-          <div className="text-center lg:text-left flex-1 relative z-10">
-            <span className="text-[10px] font-black text-emerald-600 bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-full uppercase tracking-widest mb-4 inline-block">Exam Completed</span>
-            <h3 className="text-3xl sm:text-4xl font-black text-slate-800 flex items-center justify-center lg:justify-start gap-3 mb-3">
-              <Award className="w-10 h-10 text-yellow-500 drop-shadow-md"/> ทำสำเร็จแล้ว!
-            </h3>
-            <p className="text-slate-500 font-bold">คะแนนรวมของคุณคือ <span className="text-5xl font-black text-blue-600 mx-2">{examResult.score}</span> / {examResult.maxScore}</p>
-          </div>
-          
-          <div className="flex-1 w-full bg-slate-50/80 p-6 rounded-2xl border-2 border-slate-100 relative z-10 shadow-inner">
-            <h4 className="text-xs font-black text-slate-500 mb-5 text-center flex items-center justify-center gap-2 uppercase tracking-widest"><BarChart3 className="w-4 h-4 text-blue-500"/> วิเคราะห์ความมั่นใจ</h4>
-            <div className="space-y-3.5 text-[11px] font-bold text-slate-600">
-              <div className="flex items-center gap-4">
-                <div className="w-24 text-right">มั่นใจ + ถูก</div>
-                <div className="flex-1 bg-white rounded-full h-3 overflow-hidden shadow-inner border border-slate-100"><div className="bg-emerald-500 h-full rounded-full transition-all duration-1000" style={{width: `${(examResult.analytics.cc / totalQuestions) * 100}%`}}></div></div>
-                <div className="w-6 font-black text-slate-800 text-sm">{examResult.analytics.cc}</div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-24 text-right">มั่นใจ แต่ ผิด</div>
-                <div className="flex-1 bg-white rounded-full h-3 overflow-hidden shadow-inner border border-slate-100"><div className="bg-red-400 h-full rounded-full transition-all duration-1000" style={{width: `${(examResult.analytics.cw / totalQuestions) * 100}%`}}></div></div>
-                <div className="w-6 font-black text-slate-800 text-sm">{examResult.analytics.cw}</div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-24 text-right">เดา แต่ ถูก</div>
-                <div className="flex-1 bg-white rounded-full h-3 overflow-hidden shadow-inner border border-slate-100"><div className="bg-blue-400 h-full rounded-full transition-all duration-1000" style={{width: `${(examResult.analytics.nc / totalQuestions) * 100}%`}}></div></div>
-                <div className="w-6 font-black text-slate-800 text-sm">{examResult.analytics.nc}</div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-24 text-right">เดา + ผิด</div>
-                <div className="flex-1 bg-white rounded-full h-3 overflow-hidden shadow-inner border border-slate-100"><div className="bg-slate-400 h-full rounded-full transition-all duration-1000" style={{width: `${(examResult.analytics.nw / totalQuestions) * 100}%`}}></div></div>
-                <div className="w-6 font-black text-slate-800 text-sm">{examResult.analytics.nw}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
 
-      {/* Main Question Card */}
-      <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm min-h-[400px] flex flex-col relative overflow-hidden transition-all">
-        {mode === 'instant' && checkedQuestions[q.id] && !isSubmitted && (
-          <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[11px] font-black px-5 py-2 rounded-bl-3xl z-10 flex items-center gap-1.5 shadow-md tracking-widest uppercase">
-            <Check className="w-4 h-4"/> ตรวจแล้ว
-          </div>
-        )}
+        // --- AUDIO SYSTEM ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const playTone = (freq, type, duration, vol=0.1) => {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        };
+        const sounds = {
+            click: () => playTone(600, 'sine', 0.1, 0.05),
+            correct: () => { playTone(500, 'sine', 0.1); setTimeout(()=>playTone(800, 'sine', 0.2), 100); },
+            wrong: () => playTone(200, 'sawtooth', 0.3),
+            win: () => { playTone(400, 'square', 0.2); setTimeout(()=>playTone(600, 'square', 0.2), 200); setTimeout(()=>playTone(800, 'square', 0.4), 400); },
+            lose: () => { playTone(300, 'sawtooth', 0.2); setTimeout(()=>playTone(250, 'sawtooth', 0.2), 200); setTimeout(()=>playTone(200, 'sawtooth', 0.5), 400); }
+        };
 
-        <div className="flex-1">
-          <span className="text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full mb-5 inline-block uppercase tracking-widest shadow-sm">
-             {q.type === 'mcq' ? 'ปรนัย (Multiple Choice)' : q.type === 'tf' ? 'ถูก/ผิด (True/False)' : 'จับคู่ (Matching)'}
-          </span>
-          <h3 className="text-xl sm:text-2xl font-black text-slate-800 leading-snug mb-8">{q.text}</h3>
+        // --- MASTER QUESTION DATABASE (100% ตามข้อสอบต้นฉบับเป๊ะๆ) ---
+        const rawQuizData = [
+            // --- Section 1: Geography ---
+            { id: 'g1', type: 'mcq', topic: 'Geography', q: "Which mountain range is the longest in the world and stretches along the west coast of South America?", options: ["Rocky Mountains", "Andes Mountains", "Himalayas", "Alps"], ans: 1, exp: "Andes Mountains (เทือกเขาแอนดีส) ยาวที่สุดในโลกและอยู่ตามแนวชายฝั่งตะวันตก" },
+            { id: 'g2', type: 'mcq', topic: 'Geography', q: "Which river flows through the Amazon Rainforest and is the second-longest river in the world?", options: ["Nile River", "Mississippi River", "Amazon River", "Yangtze River"], ans: 2, exp: "Amazon River (แม่น้ำอเมซอน) ไหลผ่านป่าอเมซอนและยาวเป็นอันดับ 2 ของโลก" },
+            { id: 'g3', type: 'mcq', topic: 'Geography', q: "In which country is the Atacama Desert located?", options: ["Brazil", "Argentina", "Peru", "Chile"], ans: 3, exp: "ทะเลทราย Atacama ตั้งอยู่ในประเทศ Chile" },
+            { id: 'g4', type: 'mcq', topic: 'Economy', q: "What is the main economic activity in the Pampas region?", options: ["Mining", "Fishing", "Farming and cattle raising", "Tourism"], ans: 2, exp: "เขต Pampas อุดมสมบูรณ์มาก กิจกรรมหลักคือการทำฟาร์มและปศุสัตว์ (Farming and cattle raising)" },
+            { id: 'g5', type: 'mcq', topic: 'Geography', q: "What are the Brazilian Highlands also known as?", options: ["Brazilian Mountains", "Brazilian Plains", "Brazilian Plateau", "Brazilian Desert"], ans: 2, exp: "Brazilian Highlands มีอีกชื่อว่า Brazilian Plateau (ที่ราบสูงบราซิล)" },
+            { id: 'g6', type: 'mcq', topic: 'Geography', q: "Which peak is the highest in the Andes Mountains?", options: ["Mount Everest", "Mount Kilimanjaro", "Mount Aconcagua", "Mount McKinley"], ans: 2, exp: "Mount Aconcagua คือยอดเขาที่สูงที่สุดในเทือกเขาแอนดีส" },
+            { id: 'g7', type: 'mcq', topic: 'Geography', q: "Which region is known for its stunning landscapes, including mountains, glaciers, and steppes?", options: ["Atacama Desert", "Amazon Rainforest", "Patagonia", "Pampas"], ans: 2, exp: "Patagonia ขึ้นชื่อเรื่องทิวทัศน์ที่สวยงาม รวมถึงธารน้ำแข็ง (glaciers) และทุ่งหญ้าสเตปป์" },
+            { id: 'g8', type: 'mcq', topic: 'Geography', q: "What makes the Amazon Rainforest unique?", options: ["It is the largest desert in the world", "It is the largest rainforest in the world.", "It is the highest mountain range in the world", "It is the driest place on Earth."], ans: 1, exp: "ป่าอเมซอนเป็นป่าดิบชื้น (rainforest) ที่ใหญ่ที่สุดในโลก" },
+            { id: 'g9', type: 'mcq', topic: 'Geography', q: "Which South American country is known for its large cities located in the Brazilian Highlands?", options: ["Argentina", "Colombia", "Brazil", "Chile"], ans: 2, exp: "Brazil มีเมืองใหญ่หลายเมืองตั้งอยู่บนที่ราบสูงบราซิล" },
+            { id: 'g10', type: 'mcq', topic: 'Economy', q: "What is the Atacama Desert rich in, making it an important area for mining?", options: ["Gold and silver", "Copper and lithium", "Diamonds and oil", "Coal and natural gas"], ans: 1, exp: "ทะเลทราย Atacama อุดมไปด้วยแร่ทองแดงและลิเทียม (Copper and lithium)" },
 
-          <QuestionRenderer q={q} answers={answers} matchingAnswers={matchingAnswers} isQuestionLocked={isQuestionLocked} handleSelect={handleSelect} handleMatching={handleMatching} />
-
-          {/* Confidence Input */}
-          <div className="mt-12 bg-slate-50 border-2 border-slate-100 p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-5 transition-all">
-            <span className="text-sm font-black text-slate-700 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-amber-500"/> ระบุความมั่นใจในคำตอบข้อนี้
-            </span>
-            <div className="flex gap-3 w-full sm:w-auto">
-              <button onClick={() => handleConfidence(q.id, 'confident')} disabled={isQuestionLocked} className={`flex-1 sm:flex-none px-6 py-3 rounded-xl text-xs font-black border-2 transition-all transform active:scale-95 uppercase tracking-widest ${confidences[q.id] === 'confident' ? 'border-blue-500 bg-blue-500 text-white shadow-lg shadow-blue-500/30' : 'border-slate-200 bg-white text-slate-500 hover:border-blue-400 hover:text-blue-600 shadow-sm'}`}>
-                🔥 มั่นใจ
-              </button>
-              <button onClick={() => handleConfidence(q.id, 'guess')} disabled={isQuestionLocked} className={`flex-1 sm:flex-none px-6 py-3 rounded-xl text-xs font-black border-2 transition-all transform active:scale-95 uppercase tracking-widest ${confidences[q.id] === 'guess' ? 'border-slate-700 bg-slate-700 text-white shadow-lg shadow-slate-700/30' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700 shadow-sm'}`}>
-                🎲 เดา
-              </button>
-            </div>
-          </div>
-
-          {/* Explanation Area */}
-          {(isSubmitted || showExplanation[q.id]) && q.explanation && (
-            <div className="mt-8 p-6 bg-gradient-to-r from-emerald-50 to-green-50/50 rounded-2xl border-2 border-emerald-100 text-sm text-slate-700 animate-fade-in-up shadow-inner">
-              <span className="font-black text-emerald-600 flex items-center gap-2 mb-3 uppercase tracking-widest text-xs">
-                <CheckCircle className="w-4 h-4"/> คำอธิบายเฉลย
-              </span>
-              <p className="leading-relaxed font-medium">{q.explanation}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Navigation */}
-        <div className="mt-12 pt-6 border-t-2 border-slate-100 flex flex-wrap justify-between items-center gap-4">
-          <button onClick={() => handleNav('prev')} disabled={currentIndex === 0} className={`px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all ${currentIndex === 0 ? 'text-slate-300 bg-slate-50 border border-slate-100' : 'text-slate-600 bg-white border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-sm active:scale-95'}`}>
-            <ArrowLeft className="w-4 h-4"/> ย้อนกลับ
-          </button>
-          
-          <div className="flex gap-3 ml-auto">
-            {mode === 'instant' && !isSubmitted && !checkedQuestions[q.id] && (
-              <button onClick={handleCheckInstant} className="bg-emerald-500 hover:bg-emerald-600 text-white font-black px-8 py-3 rounded-xl shadow-lg shadow-emerald-500/30 text-sm transition-all transform active:scale-95 uppercase tracking-widest">
-                ตรวจคำตอบ
-              </button>
-            )}
-
-            {!isSubmitted && isLastQuestion ? (
-              <button onClick={handleSubmit} className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-black px-10 py-3 rounded-xl shadow-xl shadow-blue-500/40 transition-all transform active:scale-95 text-sm uppercase tracking-widest">
-                ส่งข้อสอบทั้งหมด
-              </button>
-            ) : (
-              <button onClick={() => handleNav('next')} disabled={isLastQuestion} className={`px-8 py-3 rounded-xl font-black text-sm flex items-center gap-2 transition-all uppercase tracking-widest shadow-sm active:scale-95 ${isLastQuestion ? 'text-slate-300 bg-slate-50 border border-slate-100' : 'text-blue-600 bg-blue-50 border-2 border-blue-100 hover:bg-blue-100 hover:border-blue-200'}`}>
-                ถัดไป <ArrowRight className="w-4 h-4"/>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// --- Question Renderer ---
-function QuestionRenderer({ q, answers, matchingAnswers, isQuestionLocked, handleSelect, handleMatching }) {
-  if (q.type === 'mcq') {
-    return (
-      <div className="space-y-4">
-        {q.options.map((opt) => {
-          const isSelected = answers[q.id] === opt.key; const isCorrect = opt.key === q.correctAnswer;
-          let style = "border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 hover:shadow-md cursor-pointer bg-white";
-          if (isSelected) style = "border-blue-500 bg-blue-50 text-blue-800 font-bold shadow-md shadow-blue-500/10";
-          if (isQuestionLocked) {
-            style = "cursor-default border-slate-100 opacity-60 bg-slate-50/80";
-            if (isCorrect) style = "border-emerald-500 bg-emerald-50 text-emerald-800 font-black z-10 relative opacity-100 shadow-md shadow-emerald-500/20";
-            else if (isSelected) style = "border-red-400 bg-red-50 text-red-800 opacity-100 font-bold border-2";
-          }
-          return (
-            <div key={opt.key} onClick={() => handleSelect && handleSelect(q.id, opt.key)} className={`w-full text-left p-4 sm:p-5 rounded-2xl border-2 transition-all duration-300 flex items-center gap-4 sm:gap-5 ${style}`}>
-              <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black shrink-0 transition-colors shadow-sm ${isSelected || (isQuestionLocked && isCorrect) ? 'bg-current text-white shadow-inner' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
-                {opt.key}
-              </span>
-              <span className="text-sm sm:text-base font-semibold leading-relaxed flex-1">{opt.text}</span>
-              {isQuestionLocked && isCorrect && <CheckCircle className="w-7 h-7 text-emerald-500 shrink-0" />}
-              {isQuestionLocked && isSelected && !isCorrect && <X className="w-7 h-7 text-red-500 shrink-0" />}
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-  if (q.type === 'tf') {
-    return (
-      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-        {['True', 'False'].map(opt => {
-          const isSelected = answers[q.id] === opt; const isCorrect = opt === q.correctAnswer;
-          let style = "border-slate-200 hover:border-blue-400 hover:bg-blue-50 hover:shadow-md cursor-pointer text-slate-600 bg-white";
-          if (isSelected) style = "border-blue-500 bg-blue-50 text-blue-800 font-black shadow-md shadow-blue-500/10";
-          if (isQuestionLocked) {
-            style = "cursor-default opacity-50 bg-slate-50 text-slate-400 border-slate-100";
-            if (isCorrect) style = "border-emerald-500 bg-emerald-50 text-emerald-800 font-black opacity-100 shadow-md shadow-emerald-500/20";
-            else if (isSelected) style = "border-red-400 bg-red-50 text-red-800 opacity-100 font-bold";
-          }
-          return (
-            <div key={opt} onClick={() => handleSelect && handleSelect(q.id, opt)} className={`flex-1 p-6 rounded-2xl border-2 transition-all text-base flex justify-center items-center gap-3 ${style}`}>
-              {opt === 'True' ? <span className="flex items-center gap-2"><CheckCircle className="w-6 h-6"/> True (ถูก)</span> : <span className="flex items-center gap-2"><X className="w-6 h-6"/> False (ผิด)</span>}
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-  if (q.type === 'matching') {
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-slate-50/80 p-5 sm:p-6 rounded-3xl border-2 border-slate-100">
-        <div className="space-y-4">
-          <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest bg-white w-fit px-3 py-1 rounded-lg shadow-sm border border-slate-100">โจทย์ (Prompt)</h4>
-          {q.questions.map(sub => {
-            const val = matchingAnswers[q.id]?.[sub.id] || ''; const isCorrect = val === q.correctAnswers[sub.id];
-            return (
-              <div key={sub.id} className="flex gap-3 items-center">
-                <select value={val} onChange={e => handleSelect && handleMatching(q.id, sub.id, e.target.value)} disabled={isQuestionLocked} className={`p-2 sm:p-3 border-2 rounded-xl text-sm font-black w-16 text-center outline-none transition-colors appearance-none cursor-pointer shadow-sm ${isQuestionLocked ? (isCorrect ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-red-400 bg-red-50 text-red-700') : 'border-blue-200 focus:border-blue-500 bg-white hover:border-blue-400'}`}>
-                  <option value="" disabled>-</option>{q.options.map(o => <option key={o.letter} value={o.letter}>{o.letter}</option>)}
-                </select>
-                <span className="text-sm font-bold text-slate-700 bg-white px-4 py-3 rounded-xl border border-slate-200 flex-1 shadow-sm">{sub.id}. {sub.text}</span>
-                {isQuestionLocked && !isCorrect && <span className="text-[10px] font-black text-white bg-red-500 px-3 py-1.5 rounded-lg shrink-0 shadow-sm uppercase">เฉลย {q.correctAnswers[sub.id]}</span>}
-              </div>
-            );
-          })}
-        </div>
-        <div className="space-y-3 bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm h-fit">
-          <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 w-fit px-3 py-1 rounded-lg border border-slate-100 mb-4">ตัวเลือก (Options)</h4>
-          {q.options.map(opt => (
-            <div key={opt.letter} className="flex gap-3 text-sm items-start p-2 rounded-xl hover:bg-slate-50 transition-colors">
-              <span className="font-black bg-blue-50 text-blue-600 w-8 h-8 flex items-center justify-center rounded-xl shrink-0 border border-blue-100 shadow-sm">{opt.letter}</span>
-              <span className="text-slate-600 font-semibold pt-1.5">{opt.text}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-  return null;
-}
-
-// --- Review Room ---
-function ReviewRoom({ record, onBack }) {
-  const quiz = record.quizSnapshot;
-  if (!quiz) return <div className="text-center p-10 font-bold text-slate-400 bg-white rounded-3xl border border-slate-200">ไม่สามารถโหลดข้อมูลข้อสอบชุดนี้ได้ (ข้อมูลเก่าเกินไป)</div>;
-
-  return (
-    <div className="space-y-6 max-w-4xl mx-auto animate-fade-in-up pb-10">
-      <div className="bg-white/90 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm sticky top-[80px] z-40">
-        <div>
-          <button onClick={onBack} className="text-[11px] font-black text-slate-400 hover:text-blue-600 flex items-center gap-1.5 transition-colors uppercase tracking-widest mb-3 bg-slate-50 hover:bg-blue-50 w-fit px-3 py-1.5 rounded-lg border border-slate-100">
-            <ArrowLeft className="w-3.5 h-3.5"/> ปิดหน้าทบทวน
-          </button>
-          <h2 className="text-2xl font-black text-slate-800 leading-snug">{record.quizTitle}</h2>
-          <p className="text-xs text-slate-500 font-bold mt-1">สอบเมื่อ: {record.date}</p>
-        </div>
-        <div className="bg-blue-50 border-2 border-blue-100 px-6 py-4 rounded-2xl text-center shadow-sm w-full sm:w-auto">
-          <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">คะแนนที่ได้</div>
-          <div className="text-3xl font-black text-blue-600 leading-none">{record.score} <span className="text-lg text-blue-300">/ {record.maxScore}</span></div>
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        {quiz.questions.map((q, index) => (
-          <div key={q.id} className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm relative overflow-hidden">
-            <div className="absolute top-6 right-6">
-               <span className="text-[11px] font-black text-slate-400 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 uppercase tracking-widest shadow-sm">ข้อ {index + 1}</span>
-            </div>
-            <h3 className="text-xl font-black text-slate-800 leading-relaxed mb-8 pr-20">{q.text}</h3>
+            // --- Section 2: Map & Basic Geo ---
+            { id: 'm6', type: 'mcq', topic: 'Geography', q: "What is the capital city of Argentina?", options: ["Brasilia", "Caracas", "Buenos Aires", "Lima"], ans: 2, exp: "Buenos Aires เป็นเมืองหลวงของประเทศอาร์เจนตินา" },
+            { id: 'm7', type: 'mcq', topic: 'Geography', q: "What is the largest country in South America?", options: ["Argentina", "Brazil", "Chile", "Peru"], ans: 1, exp: "Brazil เป็นประเทศที่ใหญ่ที่สุดในทวีปอเมริกาใต้" },
+            { id: 'm8', type: 'mcq', topic: 'Geography', q: "Which ocean forms a border with South America in the East?", options: ["Atlantic Ocean", "Bering Strait", "Arctic Sea", "Strait of Magellan"], ans: 0, exp: "มหาสมุทร Atlantic อยู่ทางทิศตะวันออกของทวีป" },
+            { id: 'm9', type: 'mcq', topic: 'Geography', q: "What country borders South America in the North?", options: ["Panama", "Ecuador", "Honduras", "Argentina"], ans: 0, exp: "Panama เป็นประเทศในอเมริกากลางที่อยู่ติดกับทิศเหนือของอเมริกาใต้" },
+            { id: 'm10', type: 'mcq', topic: 'Geography', q: "How many countries in South America?", options: ["10", "12", "14", "16"], ans: 1, exp: "ทวีปอเมริกาใต้ประกอบด้วย 12 ประเทศ" },
             
-            <QuestionRenderer q={q} answers={record.answers || {}} matchingAnswers={record.matchingAnswers || {}} isQuestionLocked={true} />
+            // Short answers from Map section
+            { id: 'm11', type: 'short', topic: 'Geography', q: "What is the largest lake in South America?", ans: "Lake Titicaca", exp: "ทะเลสาบ Titicaca เป็นทะเลสาบน้ำจืดที่ใหญ่ที่สุด" },
+            { id: 'm12', type: 'short', topic: 'Geography', q: "What is the longest river in South America?", ans: "The Amazon River", exp: "แม่น้ำอเมซอนยาวที่สุดในทวีป" },
+            { id: 'm13', type: 'short', topic: 'Geography', q: "What is the name of the largest rainforest?", ans: "Amazon Rainforest", exp: "ป่าอเมซอนคือป่าดิบชื้นที่ใหญ่ที่สุด" },
+            
+            { id: 'm14', type: 'mcq', topic: 'Geography', q: "What is the highest mountain in South America?", options: ["Brazilian highlands", "Patagonia", "Aconcagua", "Denali mountain"], ans: 2, exp: "ยอดเขา Aconcagua คือจุดที่สูงที่สุดในอเมริกาใต้" },
+            { id: 'm15', type: 'mcq', topic: 'Geography', q: "What is the name of the largest river basin in South America?", options: ["The Llanos Plain", "The Amazon River basin", "The Panama-Paraguay-Uruguay River basin", "Cape Horn"], ans: 1, exp: "ลุ่มแม่น้ำอเมซอน (The Amazon River basin) ใหญ่ที่สุด" },
+            { id: 'm16', type: 'mcq', topic: 'Geography', q: "What country governs the Falklands Island in the South of the continent?", options: ["United Kingdom", "U.S.A", "France", "Spain"], ans: 0, exp: "หมู่เกาะ Falklands อยู่ภายใต้การปกครองของ United Kingdom (สหราชอาณาจักร)" },
+            { id: 'm17', type: 'mcq', topic: 'Geography', q: "The strait of ____ connects the Atlantic Ocean to the Pacific Ocean?", options: ["Columbus", "Fernandes", "Magellan", "Atacama"], ans: 2, exp: "ช่องแคบ Magellan เชื่อมมหาสมุทรแอตแลนติกกับแปซิฟิก" },
+            { id: 'm18', type: 'mcq', topic: 'Geography', q: "What is the capital city of Chile?", options: ["Rio de Janeiro", "Georgetown", "Caracas", "Santiago"], ans: 3, exp: "Santiago เป็นเมืองหลวงของประเทศชิลี" },
+            { id: 'm19', type: 'short', topic: 'Geography', q: "Can you name this mountain range (on the west coast of the map)?", ans: "Andes Mountains", exp: "เทือกเขาแอนดีสยาวตลอดชายฝั่งตะวันตก" },
+            { id: 'm20', type: 'short', topic: 'Geography', q: "Can you name this river in South America (flowing through Brazil)?", ans: "Amazon River", exp: "แม่น้ำอเมซอนไหลผ่านบราซิลเป็นหลัก" },
 
-            {record.confidences && record.confidences[q.id] && (
-               <div className="mt-8 flex items-center gap-3 text-[11px] font-black text-slate-500 bg-slate-50 w-fit px-4 py-2.5 rounded-xl border border-slate-100 uppercase tracking-widest">
-                 <span>ความมั่นใจ:</span> 
-                 {record.confidences[q.id] === 'confident' ? <span className="text-blue-600 flex items-center gap-1.5"><CheckCircle className="w-4 h-4"/> มั่นใจ 100%</span> : <span className="text-amber-600 flex items-center gap-1.5"><AlertCircle className="w-4 h-4"/> เดา</span>}
-               </div>
-            )}
+            // --- Section 2: Climate ---
+            { id: 'c1', type: 'mcq', topic: 'Climate', q: "What type of climate does the Amazon Rainforest have?", options: ["Arid", "Tropical", "Temperate", "Subpolar"], ans: 1, exp: "ป่าอเมซอนมีภูมิอากาศแบบ Tropical (เขตร้อน)" },
+            { id: 'c2', type: 'mcq', topic: 'Climate', q: "Which region in South America is known for its extremely dry conditions?", options: ["Pampas", "Patagonia", "Andes Mountains", "Atacama Desert"], ans: 3, exp: "ทะเลทราย Atacama คือพื้นที่ที่แห้งแล้งที่สุด" },
+            { id: 'c3', type: 'mcq', topic: 'Climate', q: "What is the temperature range usually found in the Amazon Rainforest?", options: ["10°C to 20°C", "15°C to 25°C", "25°C to 30°C", "30°C to 40°C"], ans: 2, exp: "อุณหภูมิในป่าอเมซอนจะอยู่ที่ประมาณ 25°C ถึง 30°C ตลอดปี" },
+            { id: 'c4', type: 'mcq', topic: 'Climate', q: "Which climate region has mild temperatures with distinct seasons?", options: ["Tropical", "Arid", "Temperate", "Subpolar"], ans: 2, exp: "ภูมิอากาศแบบ Temperate (อบอุ่น) จะมีอุณหภูมิปานกลางและมีฤดูกาลที่ชัดเจน" },
+            { id: 'c5', type: 'mcq', topic: 'Climate', q: "How does the climate change with altitude in the Andes Mountains?", options: ["It becomes warmer as you go higher.", "It becomes colder as you go higher.", "It remains the same at all altitudes", "It becomes more humid as you go higher."], ans: 1, exp: "ในเทือกเขาแอนดีส ยิ่งสูงอากาศจะยิ่งหนาวเย็นลง" },
+            { id: 'c6', type: 'mcq', topic: 'Climate', q: "What kind of climate does central Chile have?", options: ["Mediterranean", "Tropical", "Arid", "Subpolar"], ans: 0, exp: "ตอนกลางของชิลีมีภูมิอากาศแบบ Mediterranean" },
+            { id: 'c7', type: 'mcq', topic: 'Climate', q: "Which climate is characterized by hot, dry summers and mild, wet winters?", options: ["Tropical", "Highland", "Mediterranean", "Temperate"], ans: 2, exp: "ฤดูร้อนแห้งแล้ง ฤดูหนาวอบอุ่นและมีฝนตก คือลักษณะของแบบ Mediterranean" },
+            { id: 'c8', type: 'mcq', topic: 'Climate', q: "What is a feature of the subpolar climate found in Patagonia?", options: ["Hot and humid all year round", "Cold and windy for most of the year", "Mild temperatures with distinct seasons", "Extremely dry with no rainfall"], ans: 1, exp: "ภูมิอากาศแบบ Subpolar ในปาตาโกเนียจะหนาวและมีลมแรงเกือบตลอดปี" },
+            { id: 'c9', type: 'mcq', topic: 'Climate', q: "In which region would you find a climate similar to that of Alaska or northern Canada?", options: ["Amazon Rainforest", "Pampas", "Patagonia", "Andes Mountains"], ans: 2, exp: "Patagonia อยู่ทางตอนใต้สุด มีสภาพอากาศหนาวเย็นคล้ายอลาสก้า" },
+            { id: 'c10', type: 'mcq', topic: 'Climate', q: "What is the climate like in the Pampas region?", options: ["Cold and windy", "Hot and humid", "Temperate with distinct seasons", "Extremely dry"], ans: 2, exp: "ทุ่งหญ้า Pampas มีภูมิอากาศอบอุ่นและมีฤดูกาลที่ชัดเจน" },
 
-            {q.explanation && (
-              <div className="mt-6 p-5 sm:p-6 bg-gradient-to-r from-emerald-50 to-green-50/50 rounded-2xl border-2 border-emerald-100 text-sm text-slate-700 shadow-inner">
-                <span className="font-black text-emerald-600 flex items-center gap-2 mb-2 uppercase tracking-widest text-[11px]"><CheckCircle className="w-4 h-4"/> คำอธิบายเฉลย</span>
-                <p className="leading-relaxed font-semibold opacity-90">{q.explanation}</p>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-      <div className="flex justify-center pt-4">
-         <button onClick={onBack} className="bg-slate-800 hover:bg-slate-700 text-white font-black px-10 py-4 rounded-2xl shadow-xl transition-all transform active:scale-95 uppercase tracking-widest text-sm">กลับสู่หน้ารวมประวัติ</button>
-      </div>
-    </div>
-  );
-}
+            // --- Section 1: Culture ---
+            { id: 'cu1', type: 'mcq', topic: 'Culture', q: "What is one reason for the ethnic diversity in South America?", options: ["Climate change", "Colonization and immigration", "Natural disasters", "Geographic isolation"], ans: 1, exp: "ความหลากหลายทางชาติพันธุ์เกิดจากการเข้ามาล่าอาณานิคมและการอพยพ (Colonization and immigration)" },
+            { id: 'cu2', type: 'mcq', topic: 'Culture', q: "What are the two most widely spoken languages in South America?", options: ["English and French", "Spanish and Portuguese", "Spanish and Italian", "Portuguese and German"], ans: 1, exp: "ภาษาสเปนและโปรตุเกส เป็นสองภาษาที่ใช้มากที่สุด" },
+            { id: 'cu3', type: 'mcq', topic: 'Culture', q: "Which country in South America has Portuguese as its official language?", options: ["Argentina", "Chile", "Brazil", "Peru"], ans: 2, exp: "Brazil เป็นประเทศเดียวในทวีปที่ใช้ภาษาโปรตุเกส" },
+            { id: 'cu4', type: 'mcq', topic: 'Culture', q: "What is the main religion practiced by the majority of South Americans?", options: ["Hinduism", "Buddhism", "Roman Catholicism", "Islam"], ans: 2, exp: "ศาสนาคริสต์นิกายโรมันคาทอลิก มีผู้นับถือมากที่สุด" },
+            { id: 'cu5', type: 'mcq', topic: 'Culture', q: "Which city is NOT one of the biggest cities in South America?", options: ["São Paulo", "Buenos Aires", "Lima", "Madrid"], ans: 3, exp: "Madrid เป็นเมืองหลวงของสเปน ซึ่งอยู่ในทวีปยุโรป" },
+            { id: 'cu6', type: 'mcq', topic: 'Culture', q: "What is Carnival in Brazil known for?", options: ["Quiet reflection", "Parades, music, dancing, and elaborate costumes", "Academic conferences", "Religious pilgrimages"], ans: 1, exp: "เทศกาล Carnival โด่งดังเรื่องขบวนพาเหรด การเต้น และชุดที่อลังการ" },
+            { id: 'cu7', type: 'mcq', topic: 'Culture', q: "Which Indigenous language is spoken in South America?", options: ["Swahili", "Mandarin", "Quechua", "Finnish"], ans: 2, exp: "Quechua (เกชัว) เป็นภาษาของชนเผ่าพื้นเมือง (เช่น ชาวอินคา)" },
+            { id: 'cu8', type: 'mcq', topic: 'Culture', q: "What has improved significantly in South America but still faces challenges, especially in rural areas?", options: ["Technology", "Education", "Agriculture", "Transportation"], ans: 1, exp: "การศึกษา (Education) พัฒนาขึ้นมาก แต่ก็ยังมีปัญหาในพื้นที่ชนบท" },
+            { id: 'cu9', type: 'mcq', topic: 'Culture', q: "Which of the following festivals celebrates the Incan sun god?", options: ["Carnival", "Inti Raymi", "Christmas", "Hanukkah"], ans: 1, exp: "Inti Raymi คือเทศกาลเฉลิมฉลองเทพแห่งดวงอาทิตย์ของชาวอินคา" },
+            { id: 'cu10', type: 'mcq', topic: 'Culture', q: "Which factor contributes to the high literacy rates in many South American cities?", options: ["Climate", "Geography", "Access to schools and universities", "Agricultural development"], ans: 2, exp: "อัตราการรู้หนังสือสูงขึ้นเพราะประชากรเข้าถึงโรงเรียนและมหาวิทยาลัยได้มากขึ้น" },
+            { id: 'cu11', type: 'mcq', topic: 'Culture', q: "The Europeans brought ______ to South America and the native Indians had no immunity to these.", options: ["water", "diseases", "war", "marriages"], ans: 1, exp: "ชาวยุโรปนำโรคระบาด (diseases) เข้ามา ทำให้ชนพื้นเมืองที่ไม่มีภูมิคุ้มกันเสียชีวิตจำนวนมาก" },
+            { id: 'cu12', type: 'mcq', topic: 'Culture', q: "People who are a mix between Native Indians and Europeans are called...", options: ["Amerindians", "Incan", "Mestizo", "Europe indians"], ans: 2, exp: "Mestizo คือลูกผสมระหว่างชนพื้นเมืองอเมริกันและชาวยุโรป" },
+            { id: 'cu13', type: 'mcq', topic: 'Culture', q: "People who are a mix between Africans and Europeans are called...", options: ["Amerindians", "Mulattos", "Mestizo", "Zambos"], ans: 1, exp: "Mulattos คือลูกผสมระหว่างชาวแอฟริกันและชาวยุโรป" },
+            { id: 'cu14', type: 'mcq', topic: 'Culture', q: "Which area is the most popular religion in South America?", options: ["Islam", "Hinduism", "Jewish", "Christianity"], ans: 3, exp: "ศาสนาคริสต์ (Christianity) เป็นศาสนาที่ได้รับความนิยมมากที่สุด" },
+            { id: 'cu15', type: 'mcq', topic: 'Culture', q: "What language do they speak in most countries of South America?", options: ["English", "French", "Spanish", "Portuguese"], ans: 2, exp: "ประเทศส่วนใหญ่ในอเมริกาใต้ใช้ภาษาสเปน (Spanish)" },
 
-// --- Quiz Builder ---
-function QuizBuilder({ user, onSave, onCancel }) {
-  const [title, setTitle] = useState(''); const [description, setDescription] = useState(''); const [isPublic, setIsPublic] = useState(true); const [questions, setQuestions] = useState([]);
-  const addQuestion = (type) => {
-    playSound('click'); let newQ = { id: 'new_' + Date.now(), type, text: '', explanation: '' };
-    if (type === 'mcq') { newQ.options = [{key:'A', text:''}, {key:'B', text:''}, {key:'C', text:''}, {key:'D', text:''}]; newQ.correctAnswer = 'A'; }
-    else if (type === 'tf') { newQ.correctAnswer = 'True'; } else if (type === 'matching') { newQ.pairs = [{ id: Date.now(), prompt: '', answer: '' }]; }
-    setQuestions([...questions, newQ]); window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-  };
-  const updateQuestion = (id, field, value) => setQuestions(questions.map(q => q.id === id ? { ...q, [field]: value } : q));
-  const removeQuestion = (id) => { if(window.confirm("ต้องการลบข้อนี้ทิ้งหรือไม่?")) setQuestions(questions.filter(q => q.id !== id)); };
-  const handleSave = () => {
-    if (!title.trim()) return alert("กรุณาตั้งชื่อชุดข้อสอบ"); if (questions.length === 0) return alert("กรุณาเพิ่มข้อสอบอย่างน้อย 1 ข้อ");
-    const finalQuestions = questions.map((q, idx) => {
-      let finalQ = { ...q, id: `q_${Date.now()}_${idx}` };
-      if (q.type === 'matching') {
-        const subQs = q.pairs.map((p, i) => ({ id: i+1, text: p.prompt })); const opts = q.pairs.map((p, i) => ({ letter: String.fromCharCode(65+i), text: p.answer }));
-        const correct = {}; q.pairs.forEach((p, i) => { correct[i+1] = String.fromCharCode(65+i); });
-        finalQ = { ...finalQ, questions: subQs, options: opts, correctAnswers: correct }; delete finalQ.pairs;
-      }
-      return finalQ;
-    });
-    onSave({ id: 'quiz_' + Date.now(), title, description, author: user.name, isPublic, questions: finalQuestions });
-  };
+            // --- Section 1: Economy ---
+            { id: 'ec1', type: 'mcq', topic: 'Economy', q: "What is the Pampas region in Argentina and Brazil known for?", options: ["Mining", "Manufacturing", "Fertile land for growing crops", "Tourism"], ans: 2, exp: "พื้นที่ Pampas มีดินที่อุดมสมบูรณ์เหมาะแก่การเพาะปลูก (Fertile land)" },
+            { id: 'ec2', type: 'mcq', topic: 'Economy', q: "Which country is the world's largest producer of copper?", options: ["Brazil", "Argentina", "Venezuela", "Chile"], ans: 3, exp: "Chile เป็นผู้ผลิตทองแดง (copper) รายใหญ่ที่สุดของโลก" },
+            { id: 'ec3', type: 'mcq', topic: 'Economy', q: "What are Brazil and Colombia major producers of?", options: ["Oil", "Gold", "Coffee", "Electronics"], ans: 2, exp: "Brazil และ Colombia เป็นผู้ผลิตกาแฟ (Coffee) รายใหญ่" },
+            { id: 'ec4', type: 'mcq', topic: 'Economy', q: "What natural resource is Venezuela known for having large reserves of?", options: ["Coal", "Oil", "Copper", "Silver"], ans: 1, exp: "Venezuela มีปริมาณสำรองน้ำมัน (Oil) เป็นจำนวนมาก" },
+            { id: 'ec5', type: 'mcq', topic: 'Economy', q: "Which sector produces cars, airplanes, and electronics in South America?", options: ["Agriculture", "Tourism", "Manufacturing", "Mining"], ans: 2, exp: "ภาคการผลิต (Manufacturing) คือส่วนที่ทำหน้าที่ผลิตยานพาหนะและอิเล็กทรอนิกส์" },
+            { id: 'ec6', type: 'mcq', topic: 'Economy', q: "Which South American country has a significant manufacturing industry that includes the production of machinery and textiles?", options: ["Peru", "Argentina", "Colombia", "Ecuador"], ans: 1, exp: "Argentina มีอุตสาหกรรมการผลิตที่สำคัญ โดยเฉพาะเครื่องจักรและสิ่งทอ" },
+            { id: 'ec7', type: 'mcq', topic: 'Economy', q: "What is a popular tourist destination in South America?", options: ["Sahara Desert", "Great Wall of China", "Machu Picchu", "Eiffel Tower"], ans: 2, exp: "Machu Picchu ในประเทศเปรู เป็นสถานที่ท่องเที่ยวที่มีชื่อเสียงมาก" },
+            { id: 'ec8', type: 'mcq', topic: 'Economy', q: "What are some of the main exports of South American countries?", options: ["Agricultural products, minerals, and manufactured goods", "Technology, software, and services", "Clothing, toys, and furniture", "Books, music, and films"], ans: 0, exp: "สินค้าส่งออกหลักคือ สินค้าเกษตร แร่ธาตุ และสินค้าอุตสาหกรรม" },
+            { id: 'ec9', type: 'mcq', topic: 'Economy', q: "Which country has vast reserves of iron ore and other minerals?", options: ["Chile", "Argentina", "Brazil", "Bolivia"], ans: 2, exp: "Brazil มีแหล่งสำรองแร่เหล็ก (iron ore) และแร่ธาตุอื่นๆ จำนวนมหาศาล" },
+            { id: 'ec10', type: 'mcq', topic: 'Economy', q: "Why is trade important for the economies of South America?", options: ["It allows countries to avoid imports.", "It helps countries export agricultural products, minerals, and manufactured goods.", "It replaces the need for manufacturing.", "It prevents tourism."], ans: 1, exp: "การค้าช่วยให้ประเทศสามารถส่งออกสินค้าเกษตร แร่ และสินค้าผลิตเพื่อสร้างรายได้" },
 
-  return (
-    <div className="space-y-6 max-w-4xl mx-auto animate-fade-in-up">
-      <div className="bg-white rounded-[2rem] p-6 lg:p-10 border border-slate-200 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-        <h2 className="text-3xl font-black text-slate-800 mb-8 flex items-center gap-3"><Edit className="w-8 h-8 text-blue-600"/> สร้างชุดข้อสอบใหม่</h2>
-        <div className="space-y-6 relative z-10">
-          <div>
-            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">ชื่อชุดข้อสอบ *</label>
-            <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="เช่น แบบทดสอบปลายภาค วิทย์ ม.3" className="w-full px-5 py-4 bg-slate-50/50 border-2 border-slate-100 focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all font-bold text-slate-700 shadow-inner" />
-          </div>
-          <div>
-            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">รายละเอียด / คำชี้แจง</label>
-            <textarea rows="2" value={description} onChange={e => setDescription(e.target.value)} placeholder="คำอธิบายเพิ่มเติมสำหรับการทำข้อสอบ..." className="w-full px-5 py-4 bg-slate-50/50 border-2 border-slate-100 focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all text-sm font-medium resize-none shadow-inner" />
-          </div>
-          <div className="flex items-center gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-100 shadow-sm w-fit">
-            <div className="relative inline-flex items-center">
-              <input type="checkbox" id="isPublicToggle" className="sr-only peer" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} />
-              <div className="w-12 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600 shadow-inner"></div>
+            // --- Activity 1: Environment ---
+            { id: 'ev1', type: 'mcq', topic: 'Environment', q: "Which environmental problem is especially affecting the Amazon Rainforest?", options: ["Flooding", "Tourism", "Urbanisation", "Deforestation"], ans: 3, exp: "การตัดไม้ทำลายป่า (Deforestation) เป็นปัญหาหนักที่สุดในป่าอเมซอน" },
+            { id: 'ev2', type: 'mcq', topic: 'Environment', q: "Why are forests cut down in South America?", options: ["For farming and mining", "To create more deserts", "To increase rainfall", "To build wetlands"], ans: 0, exp: "ป่าถูกตัดลงเพื่อนำพื้นที่ไปทำฟาร์มและเหมืองแร่" },
+            { id: 'ev3', type: 'mcq', topic: 'Environment', q: "Which of the following can cause pollution according to the text?", options: ["Factories and mining activities", "Fertilisers and pesticides", "Waste", "All of the above"], ans: 3, exp: "ทั้งโรงงาน เหมือง ปุ๋ย ยาฆ่าแมลง และขยะ ล้วนเป็นสาเหตุของมลพิษ" },
+            { id: 'ev4', type: 'mcq', topic: 'Environment', q: "What does loss of biodiversity mean?", options: ["More species living in one area", "A reduction in the variety of plants and animals", "Better farming methods", "Cleaner water systems"], ans: 1, exp: "การสูญเสียความหลากหลายทางชีวภาพ คือการลดลงของชนิดพันธุ์พืชและสัตว์" },
+            { id: 'ev5', type: 'mcq', topic: 'Environment', q: "Which of the following is an effect of climate change mentioned above?", options: ["Lower mountains", "More forests", "Increased biodiversity", "Rising temperatures"], ans: 3, exp: "อุณหภูมิที่สูงขึ้น (Rising temperatures) เป็นผลจากการเปลี่ยนแปลงสภาพภูมิอากาศ" },
+            { id: 'ev6', type: 'mcq', topic: 'Environment', q: "What is the main purpose of UNEP?", options: ["To control international trade", "To protect endangered species only", "To encourage countries to protect the environment", "To build dams and roads"], ans: 2, exp: "UNEP มีเป้าหมายส่งเสริมให้ประเทศต่างๆ รักษาสิ่งแวดล้อม" },
+            { id: 'ev7', type: 'mcq', topic: 'Environment', q: "What does CITES control?", options: ["International trade in endangered animals and plants", "Air pollution levels", "Water supplies", "Population growth"], ans: 0, exp: "CITES ควบคุมการค้าระหว่างประเทศซึ่งสัตว์ป่าและพืชป่าที่ใกล้สูญพันธุ์" },
+            { id: 'ev8', type: 'mcq', topic: 'Environment', q: "What was the goal of the Kyoto Protocol?", options: ["To reduce greenhouse gas emissions", "To increase farming production", "To protect rivers only", "To stop mining"], ans: 0, exp: "พิธีสารเกียวโต มีเป้าหมายในการลดการปล่อยก๊าซเรือนกระจก (greenhouse gas emissions)" },
+            { id: 'ev9', type: 'mcq', topic: 'Environment', q: "What does the Ramsar Convention focus on protecting?", options: ["Mountains", "Wetlands", "Deserts", "Forest roads"], ans: 1, exp: "อนุสัญญาแรมซาร์ มุ่งเน้นไปที่การปกป้องพื้นที่ชุ่มน้ำ (Wetlands)" },
+            { id: 'ev10', type: 'mcq', topic: 'Environment', q: "What is an NGO?", options: ["A government department", "An organisation that works independently from governments", "A trade agreement", "A type of fertiliser"], ans: 1, exp: "NGO คือองค์กรที่ทำงานโดยอิสระ ไม่ขึ้นกับรัฐบาล" },
+            { id: 'ev11', type: 'short', topic: 'Environment', q: "How do pesticides and chemical fertiliser pollute our water?", ans: "They wash into water and rivers and lakes, polluting the planet and harming animals.", exp: "ยาฆ่าแมลงและปุ๋ยเคมีจะถูกฝนชะล้างลงสู่แม่น้ำและทะเลสาบ ทำให้แหล่งน้ำปนเปื้อน" },
+            { id: 'ev12', type: 'mcq', topic: 'Environment', q: "What does NGO stand for?", options: ["North American Government Organisation", "Non Governmental Organisation", "Not a Government Option", "Nintendo Gaming Operation"], ans: 1, exp: "NGO ย่อมาจาก Non Governmental Organisation" },
+            { id: 'ev13', type: 'short', topic: 'Environment', q: "What is the Kyoto protocol?", ans: "It is an international agreement to reduce greenhouse emissions", exp: "พิธีสารเกียวโตเป็นข้อตกลงระหว่างประเทศเพื่อลดการปล่อยก๊าซเรือนกระจก" },
+            { id: 'ev14', type: 'mcq', topic: 'Environment', q: "What does UNEP stand for?", options: ["United Nations Environment Protocol", "United Nations Energy Program", "United Nations Environmental Program", "United Northern European People"], ans: 2, exp: "UNEP ย่อมาจาก United Nations Environmental Program" },
+            { id: 'ev15', type: 'mcq', topic: 'Environment', q: "What does CITES stand for?", options: ["Convention on International Trade in Endangered Species", "Convention on International Trade in Elephants and Snakes", "Convention on Internal Traditions in Energy and Space", "Central Intelligence Treaty on Endangered Species"], ans: 0, exp: "CITES ย่อมาจาก Convention on International Trade in Endangered Species" },
+
+            // --- Activity 3: Natural Disasters ---
+            { id: 'nd1', type: 'mcq', topic: 'Natural Disasters', q: "Why does El Niño happen?", options: ["Trade winds become stronger", "Trade winds become weaker", "Volcanoes heat the ocean", "Rivers flow into the Pacific Ocean"], ans: 1, exp: "เอลนีโญเกิดจากลมค้า (Trade winds) อ่อนกำลังลง" },
+            { id: 'nd2', type: 'mcq', topic: 'Natural Disasters', q: "Normally, trade winds push warm water toward:", options: ["North America", "South America", "Asia and Australia", "Europe"], ans: 2, exp: "ปกติลมค้าจะพัดน้ำอุ่นไปทางฝั่ง Asia และ Australia" },
+            { id: 'nd3', type: 'mcq', topic: 'Natural Disasters', q: "Which country may experience heavy rainfall during El Niño?", options: ["Canada", "Bolivia", "Alaska", "Peru"], ans: 3, exp: "ในช่วงเอลนีโญ น้ำอุ่นจะไหลกลับมาฝั่งตะวันออก ทำให้ Peru มีฝนตกหนัก" },
+            { id: 'nd4', type: 'mcq', topic: 'Natural Disasters', q: "Which natural disaster forms over warm ocean water?", options: ["Hurricanes", "Floods", "Earthquakes", "Wildfires"], ans: 0, exp: "พายุเฮอริเคน (Hurricanes) ก่อตัวขึ้นเหนือผิวน้ำทะเลที่อบอุ่น" },
+            { id: 'nd5', type: 'mcq', topic: 'Natural Disasters', q: "Which region is one of the most active hurricane areas in North America?", options: ["Amazon Basin", "Gulf of Mexico", "California", "Alaska"], ans: 1, exp: "อ่าวเม็กซิโก (Gulf of Mexico) เป็นพื้นที่ที่เกิดเฮอริเคนบ่อยครั้งมาก" },
+            { id: 'nd6', type: 'mcq', topic: 'Natural Disasters', q: "Which natural disaster is caused by tectonic plates moving?", options: ["Earthquakes", "Hurricanes", "Floods", "Wildfires"], ans: 0, exp: "แผ่นดินไหวเกิดจากการเคลื่อนตัวของแผ่นเปลือกโลก (Tectonic plates)" },
+            { id: 'nd7', type: 'mcq', topic: 'Natural Disasters', q: "What do volcanoes release during eruptions?", options: ["Ice and snow", "Rain and wind", "Lava, ash, and gases", "Sand and rocks"], ans: 2, exp: "ภูเขาไฟระเบิดจะปล่อยลาวา เถ้าถ่าน (ash) และก๊าซออกมา" },
+            { id: 'nd8', type: 'mcq', topic: 'Natural Disasters', q: "Which area is commonly affected by wildfires?", options: ["Western Canada", "Mississippi River Basin", "Gulf of Mexico", "Peru"], ans: 0, exp: "พื้นที่ฝั่งตะวันตกของแคนาดา (Western Canada) มักเกิดไฟป่าได้บ่อย" },
+            { id: 'nd9', type: 'mcq', topic: 'Natural Disasters', q: "Which natural disaster may spread disease if clean water becomes difficult to access?", options: ["Hurricanes", "Wildfires", "Earthquakes", "Floods"], ans: 3, exp: "น้ำท่วม (Floods) ทำให้แหล่งน้ำสะอาดปนเปื้อน นำไปสู่การแพร่ระบาดของโรค" },
+            { id: 'nd10', type: 'mcq', topic: 'Natural Disasters', q: "Why is El Niño called a phenomenon?", options: ["Scientists completely understand it", "It only happens once", "Scientists cannot predict exactly when it will begin", "It causes earthquakes"], ans: 2, exp: "เรียกว่าปรากฏการณ์เพราะนักวิทยาศาสตร์ไม่สามารถทำนายได้แน่ชัดว่าจะเริ่มเกิดขึ้นเมื่อไหร่" },
+
+            // --- Activity 4: Short Answer Questions ---
+            { id: 'sa1', type: 'short', topic: 'Natural Disasters', q: "Explain how trade winds affect ocean temperatures during El Niño.", ans: "Trade winds become weaker, allowing warm water to move back toward South America, raising ocean temperatures.", exp: "ลมค้าที่อ่อนกำลังลงทำให้น้ำอุ่นที่เคยพัดไปฝั่งเอเชีย ไหลย้อนกลับมาฝั่งอเมริกาใต้ ส่งผลให้อุณหภูมิน้ำสูงขึ้น" },
+            { id: 'sa2', type: 'short', topic: 'Natural Disasters', q: "Why might fish populations decrease during El Niño?", ans: "Warmer water prevents cold, nutrient-rich water from rising, leaving fish with less food.", exp: "น้ำที่อุ่นขึ้นไปปิดกั้นไม่ให้น้ำเย็นซึ่งอุดมด้วยสารอาหารลอยขึ้นมาที่ผิวน้ำ ปลาจึงขาดแคลนอาหาร" },
+            { id: 'sa3', type: 'short', topic: 'Natural Disasters', q: "Name two places affected by hurricanes.", ans: "Gulf of Mexico and the Caribbean (or parts of North America).", exp: "พื้นที่อ่าวเม็กซิโกและทะเลแคริบเบียนมักโดนพายุเฮอริเคนเป็นประจำ" },
+            { id: 'sa4', type: 'short', topic: 'Natural Disasters', q: "Explain two causes of floods.", ans: "Heavy rainfall (like during El Niño) and storm surges from hurricanes.", exp: "สาเหตุหลักคือ ฝนที่ตกหนักมากๆ และคลื่นซัดฝั่ง (Storm surge) จากพายุ" },
+            { id: 'sa5', type: 'short', topic: 'Natural Disasters', q: "Why are the western sides of North and South America more affected by earthquakes?", ans: "Because they are located along tectonic plate boundaries (part of the Ring of Fire).", exp: "เนื่องจากพื้นที่เหล่านี้ตั้งอยู่บนแนวรอยต่อของแผ่นเปลือกโลก หรือที่เรียกว่า วงแหวนแห่งไฟ (Ring of Fire)" },
+            { id: 'sa6', type: 'short', topic: 'Natural Disasters', q: "How can countries reduce the effects of natural disasters?", ans: "Through education, better infrastructure, and evacuation plans.", exp: "สามารถลดผลกระทบได้โดยการให้ความรู้ การสร้างสิ่งก่อสร้างที่แข็งแรง และมีแผนอพยพเตรียมไว้" }
+        ];
+
+        // Randomize questions/options logic
+        const shuffleArray = (array) => {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        };
+
+        const TopBar = ({ score, hearts, streak, mode, onExit }) => (
+            <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm mb-6 border border-slate-100">
+                <button onClick={onExit} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors">
+                    <i className="fa-solid fa-xmark text-lg"></i>
+                </button>
+                <div className="flex gap-4 sm:gap-6 font-bold text-slate-700">
+                    <div className="flex flex-col items-center"><span className="text-xs text-slate-400 uppercase">Score</span><span className="text-primary text-xl">{score}</span></div>
+                    <div className="flex flex-col items-center"><span className="text-xs text-slate-400 uppercase">Streak</span><span className="text-warning text-xl"><i className="fa-solid fa-fire mr-1"></i>{streak}</span></div>
+                    {mode === 'survival' && (
+                        <div className="flex flex-col items-center">
+                            <span className="text-xs text-slate-400 uppercase">Life</span>
+                            <span className="text-danger text-xl tracking-widest">
+                                {[...Array(3)].map((_, i) => <i key={i} className={`fa-${i < hearts ? 'solid' : 'regular'} fa-heart mr-1`}></i>)}
+                            </span>
+                        </div>
+                    )}
+                </div>
             </div>
-            <label htmlFor="isPublicToggle" className="text-sm font-black text-slate-700 cursor-pointer flex flex-col uppercase tracking-wider">
-              เผยแพร่สาธารณะ (Public)
-              <span className="text-[10px] text-slate-400 font-bold capitalize mt-0.5">ทุกคนสามารถเห็นและทำข้อสอบนี้ได้</span>
-            </label>
-          </div>
-        </div>
-      </div>
+        );
 
-      {questions.map((q, index) => (
-        <div key={q.id} className="bg-white rounded-[2rem] p-6 lg:p-10 border border-slate-200 shadow-sm relative">
-          <button onClick={() => removeQuestion(q.id)} className="absolute top-8 right-8 text-slate-400 hover:text-white hover:bg-red-500 p-2.5 rounded-xl transition-all shadow-sm"><Trash2 className="w-5 h-5" /></button>
-          <div className="mb-6 pr-16">
-            <span className="bg-blue-600 text-white text-[11px] font-black px-4 py-2 rounded-xl uppercase tracking-widest shadow-md">ข้อ {index + 1} - {q.type.toUpperCase()}</span>
-          </div>
-          <div className="space-y-6">
-            <div>
-              <label className="block text-[11px] font-black text-slate-500 mb-3 uppercase tracking-widest ml-1">โจทย์คำถาม</label>
-              <input type="text" value={q.text} onChange={e => updateQuestion(q.id, 'text', e.target.value)} placeholder="พิมพ์โจทย์ที่นี่..." className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 focus:border-blue-400 focus:bg-white rounded-2xl text-base font-bold outline-none transition-all shadow-inner" />
-            </div>
-             {q.type === 'mcq' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
-                {q.options.map((opt, oIndex) => (
-                  <div key={opt.key} className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${q.correctAnswer === opt.key ? 'border-emerald-400 bg-emerald-50/80 shadow-sm' : 'border-transparent bg-white hover:border-slate-200'}`}>
-                    <input type="radio" name={`correct_${q.id}`} checked={q.correctAnswer === opt.key} onChange={() => updateQuestion(q.id, 'correctAnswer', opt.key)} className="w-5 h-5 accent-emerald-500 cursor-pointer" />
-                    <span className="font-black text-slate-500 w-5 text-center text-lg">{opt.key}</span>
-                    <input type="text" placeholder={`ตัวเลือก ${opt.key}`} value={opt.text} onChange={e => { const newOpts = [...q.options]; newOpts[oIndex].text = e.target.value; updateQuestion(q.id, 'options', newOpts); }} className="flex-1 px-4 py-3 bg-white border border-slate-200 focus:border-blue-400 rounded-xl text-sm font-semibold outline-none shadow-sm transition-colors" />
-                  </div>
-                ))}
-              </div>
-            )}
-            {q.type === 'tf' && (
-              <div className="flex flex-col sm:flex-row gap-4 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
-                <label className={`flex-1 p-5 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-3 font-black text-lg justify-center ${q.correctAnswer === 'True' ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
-                  <input type="radio" checked={q.correctAnswer === 'True'} onChange={() => updateQuestion(q.id, 'correctAnswer', 'True')} className="hidden" />✔️ True (ถูก)
-                </label>
-                <label className={`flex-1 p-5 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-3 font-black text-lg justify-center ${q.correctAnswer === 'False' ? 'border-red-500 bg-red-50 text-red-700 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
-                  <input type="radio" checked={q.correctAnswer === 'False'} onChange={() => updateQuestion(q.id, 'correctAnswer', 'False')} className="hidden" />❌ False (ผิด)
-                </label>
-              </div>
-            )}
-             {q.type === 'matching' && (
-              <div className="space-y-4 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
-                {q.pairs.map((pair, pIdx) => (
-                  <div key={pair.id} className="flex flex-col sm:flex-row gap-3 items-center bg-white p-3 rounded-2xl border border-slate-200 shadow-sm relative">
-                    <span className="hidden sm:block text-xs font-black text-slate-400 w-5 text-center">{pIdx+1}.</span>
-                    <input type="text" value={pair.prompt} placeholder="โจทย์ฝั่งซ้าย" onChange={e => { const newP = [...q.pairs]; newP[pIdx].prompt = e.target.value; updateQuestion(q.id, 'pairs', newP); }} className="w-full sm:flex-1 px-4 py-3 bg-slate-50 border border-slate-200 focus:border-blue-400 rounded-xl text-sm font-bold shadow-inner outline-none transition-colors" />
-                    <span className="text-slate-300 hidden sm:block"><ArrowRight className="w-5 h-5"/></span>
-                    <input type="text" value={pair.answer} placeholder="คำตอบฝั่งขวา (ที่ถูก)" onChange={e => { const newP = [...q.pairs]; newP[pIdx].answer = e.target.value; updateQuestion(q.id, 'pairs', newP); }} className="w-full sm:flex-1 px-4 py-3 bg-slate-50 border border-slate-200 focus:border-blue-400 rounded-xl text-sm font-bold shadow-inner outline-none transition-colors" />
-                    <button onClick={() => { const newP = q.pairs.filter((_,i) => i !== pIdx); updateQuestion(q.id, 'pairs', newP);}} className="absolute -top-2 -right-2 sm:relative sm:top-0 sm:right-0 bg-white sm:bg-transparent border sm:border-0 rounded-full sm:rounded-none text-slate-400 hover:text-red-500 p-1.5 transition-colors"><X className="w-4 h-4"/></button>
-                  </div>
-                ))}
-                <button onClick={() => updateQuestion(q.id, 'pairs', [...q.pairs, { id: Date.now(), prompt: '', answer: '' }])} className="text-[11px] font-black text-blue-600 mt-2 bg-blue-50 hover:bg-blue-100 px-4 py-2.5 rounded-xl transition-colors inline-flex items-center gap-1.5 uppercase tracking-widest shadow-sm"><Plus className="w-4 h-4"/> เพิ่มคู่ใหม่</button>
-              </div>
-            )}
-            <div>
-              <label className="block text-[11px] font-black text-slate-500 mb-3 uppercase tracking-widest ml-1">คำอธิบายเฉลย (แสดงหลังทำข้อสอบ)</label>
-              <textarea rows="2" value={q.explanation} onChange={e => updateQuestion(q.id, 'explanation', e.target.value)} placeholder="อธิบายเหตุผลของคำตอบข้อนี้..." className="w-full px-5 py-4 bg-emerald-50/50 border-2 border-emerald-100 focus:border-emerald-400 focus:bg-emerald-50 rounded-2xl text-sm font-medium outline-none transition-all resize-none shadow-inner" />
-            </div>
-          </div>
-        </div>
-      ))}
+        // --- Custom Waifu Evolution Component ---
+        const WaifuEvolution = ({ expPoints }) => {
+            // ใช้คะแนน 15 แต้มต่อ 1 เลเวลเพื่อให้มีแรงจูงใจในการตอบคำถามเยอะๆ
+            const level = Math.min(5, Math.floor(expPoints / 15) + 1);
+            const stages = [
+                { name: "คุชิดะ คิเคียว", title: "Lv.1 Seedling", img: "https://cdn.myanimelist.net/images/characters/13/333604.jpg" },
+                { name: "ชิอินะ มาฮิรุ", title: "Lv.2 Sprout", img: "https://cdn.myanimelist.net/images/characters/5/496924.jpg" },
+                { name: "โฮชิโนะ รูบี้", title: "Lv.3 Small Plant", img: "https://cdn.myanimelist.net/images/characters/5/503698.jpg" },
+                { name: "ร็อกซี่ มิเกอร์เดีย", title: "Lv.4 Tree", img: "https://cdn.myanimelist.net/images/characters/13/427926.jpg" },
+                { name: "อาเรีย (Alya)", title: "Lv.Max Master", img: "https://cdn.myanimelist.net/images/characters/14/535496.jpg" }
+            ];
+            
+            return (
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 text-center relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-100 transition-opacity"><i className="fa-solid fa-heart text-primary"></i></div>
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Waifu Evolution System</h3>
+                    
+                    {/* Waifu Avatar Circle */}
+                    <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-primary shadow-lg mb-4 animate-bounce-in relative bg-slate-100">
+                        <img 
+                            src={stages[level-1].img} 
+                            alt={stages[level-1].name} 
+                            className="w-full h-full object-cover"
+                            onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=Waifu&background=3b82f6&color=fff&size=128' }}
+                        />
+                    </div>
+                    
+                    <div className="font-bold text-xl text-slate-800">{stages[level-1].name}</div>
+                    <div className="text-xs font-bold text-primary mb-2">{stages[level-1].title}</div>
+                    
+                    <div className="text-xs text-slate-400 font-bold mt-2">EXP: {expPoints} {level < 5 ? `(ต้องการอีก ${(level*15) - expPoints} เพื่ออัปเลเวล)` : '(MAX LEVEL)'}</div>
+                    
+                    <div className="w-full bg-slate-100 h-2 rounded-full mt-3 overflow-hidden">
+                        <div className="bg-primary h-full transition-all duration-1000" style={{width: `${level === 5 ? 100 : ((expPoints % 15) / 15) * 100}%`}}></div>
+                    </div>
+                </div>
+            );
+        };
 
-      <div className="bg-white/50 backdrop-blur-md border-2 border-dashed border-blue-300 rounded-[2rem] p-10 text-center hover:bg-white hover:border-blue-400 transition-all shadow-sm">
-        <h3 className="text-sm font-black text-blue-700 mb-6 uppercase tracking-widest flex items-center justify-center gap-2"><Plus className="w-5 h-5"/> เพิ่มข้อสอบใหม่</h3>
-        <div className="flex flex-wrap justify-center gap-4">
-          <button onClick={() => addQuestion('mcq')} className="bg-white border-2 border-slate-200 hover:border-blue-500 hover:text-blue-600 text-slate-700 font-black py-3 px-6 rounded-xl shadow-sm text-sm transition-all transform active:scale-95">ปรนัย (4 ตัวเลือก)</button>
-          <button onClick={() => addQuestion('tf')} className="bg-white border-2 border-slate-200 hover:border-blue-500 hover:text-blue-600 text-slate-700 font-black py-3 px-6 rounded-xl shadow-sm text-sm transition-all transform active:scale-95">ถูก / ผิด</button>
-          <button onClick={() => addQuestion('matching')} className="bg-white border-2 border-slate-200 hover:border-blue-500 hover:text-blue-600 text-slate-700 font-black py-3 px-6 rounded-xl shadow-sm text-sm transition-all transform active:scale-95">จับคู่</button>
-        </div>
-      </div>
-      
-      <div className="flex justify-end gap-4 pt-8 pb-12">
-        <button onClick={onCancel} className="px-8 py-4 font-black text-slate-500 hover:bg-slate-100 rounded-2xl transition-colors uppercase tracking-widest text-sm">ยกเลิก</button>
-        <button onClick={handleSave} className="bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-blue-600 text-white font-black px-10 py-4 rounded-2xl shadow-xl shadow-blue-500/30 transform active:scale-95 transition-all uppercase tracking-widest text-sm">
-          บันทึกชุดข้อสอบ
-        </button>
-      </div>
-    </div>
-  );
-}
+        const App = () => {
+            const [savedExp, setSavedExp] = useState(parseInt(localStorage.getItem('quizExpWaifu')) || 0);
+            const [bookmarks, setBookmarks] = useState(JSON.parse(localStorage.getItem('quizBookmarksWaifu')) || []);
+            const [wrongLog, setWrongLog] = useState(JSON.parse(localStorage.getItem('quizWrongLogWaifu')) || []);
 
-// --- INITIAL DATA ---
-const INITIAL_QUIZZES = [
-  {
-    id: 'inazuma_ffi_01',
-    title: 'บททดสอบระดับพระกาฬ: Inazuma Japan (ภาค FFI)',
-    description: 'ทดสอบความรู้ระดับแฟนพันธุ์แท้เกี่ยวกับการแข่งขันฟุตบอลฟรอนเทียร์อินเตอร์เนชันแนล',
-    author: 'Admin',
-    isPublic: true,
-    questions: [
-      { id: 'q1', type: 'mcq', text: 'ท่าไม้ตายผสานที่ใช้ทำประตูสุดท้ายเพื่อเอาชนะทีม Little Gigant ในรอบชิงชนะเลิศคือท่าอะไร?', options: [{ key: 'A', text: 'The Earth' }, { key: 'B', text: 'Grand Fire' }, { key: 'C', text: 'Jet Stream' }, { key: 'D', text: 'Big Bang' }], correctAnswer: 'C', explanation: 'Jet Stream เป็นท่าผสาน 3 คนระหว่าง เอนโด, โกเอนจิ และ โทระมารุ (ตอนแรกฮิโรโตะลองฝึกแต่ไม่สำเร็จ)' },
-      { id: 'q2', type: 'tf', text: 'คุโด มิจิยะ (Kudou Michiya) ดำรงตำแหน่งเป็นโค้ชหลักของ Inazuma Japan ตลอดการแข่งขัน FFI ตั้งแต่ต้นจนจบโดยไม่มีการเปลี่ยนตัว', correctAnswer: 'False', explanation: 'ผิดครับ ในช่วงรอบคัดเลือกโซนเอเชีย โค้ชคุโดถูกสมาคมฟุตบอลสั่งพักงานชั่วคราว ทำให้ โค้ชฮิบิกิ ต้องเข้ามาคุมทีมแทนในนัดที่เจอกับ Fire Dragon' },
-      { id: 'q3', type: 'matching', text: 'จงจับคู่กัปตันทีมชาติ กับ ประเทศต้นสังกัดในการแข่งขัน FFI', questions: [{ id: 1, text: 'Fidio Aldena (ฟิดิโอ)' }, { id: 2, text: 'Edgar Valtinas (เอดการ์)' }, { id: 3, text: 'Teres Tolue (เทเรส)' }, { id: 4, text: 'Mac Roniejo (แมค โลนิโจ)' }], options: [{ letter: 'A', text: 'Argentina' }, { letter: 'B', text: 'Brazil' }, { letter: 'C', text: 'Italy' }, { letter: 'D', text: 'England' }], correctAnswers: { '1':'C', '2':'D', '3':'A', '4':'B' }, explanation: 'ฟิดิโอ=อิตาลี, เอดการ์=อังกฤษ, เทเรส=อาร์เจนตินา, แมค=บราซิล' },
-      { id: 'q4', type: 'mcq', text: 'ใครคือผู้เล่นที่ถูกคัดออกจากทีม Inazuma Japan (บาดเจ็บ/สภาพร่างกายไม่ไหว) และไม่ได้ไปแข่งขันรอบสุดท้ายที่เกาะไลโอคอท?', options: [{ key: 'A', text: 'Someoka Ryuugo' }, { key: 'B', text: 'Midorikawa Ryuuji' }, { key: 'C', text: 'Fubuki Shirou' }, { key: 'D', text: 'Tsunami Jousuke' }], correctAnswer: 'B', explanation: 'มิโดริคาวะ รุยจิ ถอนตัวจากทีมเนื่องจากร่างกายรับการฝึกหนักไม่ไหว ส่วนฟุบุกิเจ็บแต่ได้กลับมาแข่งใหม่' }
-    ]
-  }
-];
+            const [screen, setScreen] = useState('menu');
+            const [mode, setMode] = useState('normal');
+            const [questionSet, setQuestionSet] = useState([]);
+            const [currentIdx, setCurrentIdx] = useState(0);
+            const [answers, setAnswers] = useState({});
+            const [score, setScore] = useState(0);
+            const [streak, setStreak] = useState(0);
+            const [bestStreak, setBestStreak] = useState(0);
+            const [hearts, setHearts] = useState(3);
+            const [showExp, setShowExp] = useState(false);
+            const [qStatus, setQStatus] = useState(null);
 
+            const updateExp = (points) => {
+                const newExp = savedExp + points;
+                setSavedExp(newExp);
+                localStorage.setItem('quizExpWaifu', newExp);
+            };
+            const toggleBookmark = (id) => {
+                let newB = [...bookmarks];
+                if(newB.includes(id)) newB = newB.filter(b => b !== id);
+                else newB.push(id);
+                setBookmarks(newB);
+                localStorage.setItem('quizBookmarksWaifu', JSON.stringify(newB));
+            };
+            const logWrong = (id) => {
+                let newW = [...wrongLog];
+                if(!newW.includes(id)) {
+                    newW.push(id);
+                    localStorage.setItem('quizWrongLogWaifu', JSON.stringify(newW));
+                    setWrongLog(newW);
+                }
+            };
+
+            const startGame = (selectedMode, filterType) => {
+                sounds.click();
+                let qs = [...rawQuizData];
+                
+                if (filterType === 'mcq') qs = qs.filter(q => q.type === 'mcq');
+                if (filterType === 'short') qs = qs.filter(q => q.type === 'short');
+                if (filterType === 'bookmark') qs = qs.filter(q => bookmarks.includes(q.id));
+                if (filterType === 'wrong') qs = qs.filter(q => wrongLog.includes(q.id));
+
+                if (qs.length === 0) {
+                    alert("ไม่มีข้อสอบในหมวดนี้!");
+                    return;
+                }
+
+                qs = shuffleArray(qs).map(q => {
+                    if (q.type === 'mcq') {
+                        let mappedOpts = q.options.map((text, idx) => ({ text, originalIdx: idx }));
+                        mappedOpts = shuffleArray(mappedOpts);
+                        const newCorrectAns = mappedOpts.findIndex(opt => opt.originalIdx === q.ans);
+                        return { ...q, options: mappedOpts.map(o => o.text), ans: newCorrectAns };
+                    }
+                    return q;
+                });
+
+                if(selectedMode === 'speed') qs = qs.slice(0, 10);
+
+                setQuestionSet(qs);
+                setMode(selectedMode);
+                setCurrentIdx(0);
+                setAnswers({});
+                setScore(0);
+                setStreak(0);
+                setBestStreak(0);
+                setHearts(3);
+                setShowExp(false);
+                setQStatus(null);
+                setScreen('playing');
+            };
+
+            const finishGame = () => {
+                if(score > questionSet.length * 0.7) {
+                    sounds.win();
+                    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                } else {
+                    sounds.lose();
+                }
+                setScreen('result');
+            };
+
+            const handleMCQAnswer = (selectedIdx) => {
+                if (qStatus !== null) return;
+                const q = questionSet[currentIdx];
+                const isCorrect = selectedIdx === q.ans;
+                processAnswer(isCorrect, selectedIdx);
+            };
+
+            const handleShortAnswerSelfCheck = (isCorrect) => {
+                processAnswer(isCorrect, isCorrect ? "ถูก" : "ผิด");
+            };
+
+            const processAnswer = (isCorrect, recordedAnswer) => {
+                const q = questionSet[currentIdx];
+                setAnswers({...answers, [currentIdx]: recordedAnswer});
+                
+                if (isCorrect) {
+                    sounds.correct();
+                    setQStatus('correct');
+                    setScore(s => s + 1);
+                    setStreak(s => {
+                        const newS = s + 1;
+                        if(newS > bestStreak) setBestStreak(newS);
+                        return newS;
+                    });
+                    updateExp(1);
+                    if(wrongLog.includes(q.id)) {
+                        const newW = wrongLog.filter(id => id !== q.id);
+                        setWrongLog(newW);
+                        localStorage.setItem('quizWrongLogWaifu', JSON.stringify(newW));
+                    }
+                } else {
+                    sounds.wrong();
+                    setQStatus('wrong');
+                    setStreak(0);
+                    logWrong(q.id);
+                    if (mode === 'survival') {
+                        setHearts(h => {
+                            if (h - 1 <= 0) setTimeout(() => finishGame(), 1500);
+                            return h - 1;
+                        });
+                    }
+                }
+                setShowExp(true);
+            };
+
+            const nextQuestion = () => {
+                sounds.click();
+                if (currentIdx < questionSet.length - 1 && (mode !== 'survival' || hearts > 0)) {
+                    setCurrentIdx(currentIdx + 1);
+                    setShowExp(false);
+                    setQStatus(null);
+                } else {
+                    finishGame();
+                }
+            };
+
+            const getMomentumClass = () => {
+                if(streak >= 10) return 'momentum-glow-3';
+                if(streak >= 5) return 'momentum-glow-2';
+                if(streak >= 3) return 'momentum-glow-1';
+                if(streak > 0) return 'momentum-glow-0';
+                return 'bg-slate-300';
+            };
+
+            if (screen === 'menu') {
+                return (
+                    <div className="min-h-screen p-4 md:p-8 max-w-5xl mx-auto flex flex-col justify-center items-center">
+                        <div className="text-center mb-10 animate-bounce-in">
+                            <h1 className="text-4xl md:text-6xl font-extrabold text-slate-800 mb-3 tracking-tight">Exam<span className="text-primary">Master</span>.</h1>
+                            <p className="text-slate-500 font-medium text-lg">ข้อสอบอเมริกาใต้ 100% ครบทุก Section</p>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-6 w-full">
+                            <div className="md:col-span-1 space-y-6">
+                                <WaifuEvolution expPoints={savedExp} />
+                                <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col gap-3">
+                                    <button onClick={() => startGame('normal', 'bookmark')} className="w-full flex justify-between items-center bg-amber-50 text-amber-700 p-4 rounded-xl font-bold hover:bg-amber-100 transition border border-amber-100">
+                                        <span><i className="fa-solid fa-bookmark mr-2"></i>Bookmarks</span>
+                                        <span className="bg-white px-2 py-1 rounded-md text-sm">{bookmarks.length}</span>
+                                    </button>
+                                    <button onClick={() => startGame('normal', 'wrong')} className="w-full flex justify-between items-center bg-rose-50 text-rose-700 p-4 rounded-xl font-bold hover:bg-rose-100 transition border border-rose-100">
+                                        <span><i className="fa-solid fa-book-skull mr-2"></i>Wrong Notes</span>
+                                        <span className="bg-white px-2 py-1 rounded-md text-sm">{wrongLog.length}</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="md:col-span-2 grid sm:grid-cols-2 gap-4">
+                                <div className="glass p-8 rounded-3xl flex flex-col h-full border border-slate-200 hover:border-primary transition group cursor-pointer" onClick={() => startGame('normal', 'all')}>
+                                    <div className="text-4xl text-primary mb-4 group-hover:scale-110 transition-transform"><i className="fa-solid fa-graduation-cap"></i></div>
+                                    <h3 className="text-2xl font-bold mb-2">Classic Grind</h3>
+                                    <p className="text-slate-500 mb-6 flex-grow">ลุยข้อสอบทุกพาร์ท ทั้งกากบาทและข้อเขียน เพื่อสะสม EXP อัปเวลไวฟุ!</p>
+                                    <button className="bg-slate-800 text-white w-full py-3 rounded-xl font-bold group-hover:bg-primary transition">Play All</button>
+                                </div>
+
+                                <div className="glass p-8 rounded-3xl flex flex-col h-full border border-slate-200 hover:border-danger transition group cursor-pointer" onClick={() => startGame('survival', 'mcq')}>
+                                    <div className="text-4xl text-danger mb-4 group-hover:scale-110 transition-transform"><i className="fa-solid fa-heart-pulse"></i></div>
+                                    <h3 className="text-2xl font-bold mb-2">Survival MCQ</h3>
+                                    <p className="text-slate-500 mb-6 flex-grow">โหมดเฉพาะกากบาท ล้วนๆ ผิดได้แค่ 3 ครั้งเท่านั้น ตื่นเต้นเร้าใจ</p>
+                                    <button className="bg-slate-800 text-white w-full py-3 rounded-xl font-bold group-hover:bg-danger transition">Start Survival</button>
+                                </div>
+
+                                <div className="glass p-8 rounded-3xl flex flex-col h-full border border-slate-200 hover:border-warning transition group cursor-pointer sm:col-span-2" onClick={() => startGame('normal', 'short')}>
+                                    <div className="text-4xl text-warning mb-4 group-hover:scale-110 transition-transform"><i className="fa-solid fa-pen-nib"></i></div>
+                                    <h3 className="text-2xl font-bold mb-2">Written Challenge</h3>
+                                    <p className="text-slate-500 mb-6">ท้าทายด้วยข้อเขียนล้วนๆ (ใช้ระบบ Self-Check ประเมินตัวเอง)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (screen === 'playing') {
+                const q = questionSet[currentIdx];
+                const isBookmarked = bookmarks.includes(q.id);
+
+                return (
+                    <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto flex flex-col">
+                        <TopBar score={score} hearts={hearts} streak={streak} mode={mode} onExit={() => setScreen('menu')} />
+
+                        <div className="glass rounded-3xl overflow-hidden flex-grow flex flex-col shadow-lg border border-slate-200 animate-bounce-in relative">
+                            
+                            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white/50">
+                                <span className="bg-blue-100 text-primary font-bold px-3 py-1 rounded-lg text-sm">{q.topic}</span>
+                                <div className="flex items-center gap-4">
+                                    <span className="font-bold text-slate-400 text-sm">Question {currentIdx + 1} / {questionSet.length}</span>
+                                    <button onClick={() => { sounds.click(); toggleBookmark(q.id); }} className="text-2xl hover:scale-110 transition">
+                                        <i className={`fa-${isBookmarked ? 'solid' : 'regular'} fa-bookmark ${isBookmarked ? 'text-warning' : 'text-slate-300'}`}></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="p-6 md:p-10 flex-grow overflow-y-auto">
+                                <h2 className="text-xl md:text-3xl font-extrabold text-slate-800 mb-8 leading-snug">
+                                    {q.q}
+                                </h2>
+
+                                {q.type === 'mcq' && (
+                                    <div className="space-y-4">
+                                        {q.options.map((opt, idx) => {
+                                            let btnClass = "option-btn w-full text-left p-5 rounded-2xl border-2 font-bold text-lg flex items-center gap-4 ";
+                                            let icon = <span className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-sm shrink-0">{String.fromCharCode(65 + idx)}</span>;
+
+                                            if (qStatus) {
+                                                if (idx === q.ans) {
+                                                    btnClass += "bg-emerald-50 border-emerald-400 text-emerald-900 shadow-sm";
+                                                    icon = <span className="w-8 h-8 rounded-full bg-emerald-500 text-white flex flex-center items-center justify-center font-bold shrink-0"><i className="fa-solid fa-check"></i></span>;
+                                                } else if (idx === answers[currentIdx]) {
+                                                    btnClass += "bg-rose-50 border-rose-400 text-rose-900";
+                                                    icon = <span className="w-8 h-8 rounded-full bg-rose-500 text-white flex flex-center items-center justify-center font-bold shrink-0"><i className="fa-solid fa-xmark"></i></span>;
+                                                } else {
+                                                    btnClass += "border-slate-200 text-slate-400 bg-white opacity-50";
+                                                }
+                                            } else {
+                                                btnClass += "bg-white border-slate-200 text-slate-700 hover:border-primary hover:bg-blue-50 cursor-pointer shadow-sm";
+                                            }
+
+                                            return (
+                                                <button key={idx} onClick={() => handleMCQAnswer(idx)} className={btnClass} disabled={qStatus !== null}>
+                                                    {icon} <span>{opt}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {q.type === 'short' && !qStatus && (
+                                    <div className="bg-slate-50 border-2 border-slate-200 border-dashed rounded-2xl p-10 text-center">
+                                        <i className="fa-solid fa-brain text-4xl text-slate-300 mb-4"></i>
+                                        <h3 className="font-bold text-xl text-slate-600 mb-2">Think of the answer...</h3>
+                                        <p className="text-slate-400 mb-6">เขียนลงกระดาษ หรือนึกคำตอบไว้ในใจ แล้วกดปุ่มเพื่อดูเฉลย</p>
+                                        <button onClick={() => { sounds.click(); setShowExp(true); setQStatus('checking'); }} className="bg-primary text-white font-bold py-3 px-8 rounded-xl hover:bg-blue-600 shadow-md">
+                                            Show Answer
+                                        </button>
+                                    </div>
+                                )}
+
+                                {showExp && (
+                                    <div className="mt-8 animate-bounce-in">
+                                        {q.type === 'short' && qStatus === 'checking' && (
+                                            <div className="bg-white border-2 border-primary rounded-2xl p-6 mb-6 shadow-md text-center">
+                                                <h3 className="font-bold text-slate-500 mb-2 uppercase text-sm">Correct Answer:</h3>
+                                                <p className="text-xl font-bold text-slate-800 mb-6">{q.ans}</p>
+                                                <div className="font-bold text-slate-600 mb-4">คุณตอบถูกหรือไม่? (ประเมินตัวเอง)</div>
+                                                <div className="flex gap-4 justify-center">
+                                                    <button onClick={() => handleShortAnswerSelfCheck(true)} className="flex-1 bg-emerald-500 text-white font-bold py-3 rounded-xl hover:bg-emerald-600 shadow-md"><i className="fa-solid fa-check mr-2"></i> ตอบถูก</button>
+                                                    <button onClick={() => handleShortAnswerSelfCheck(false)} className="flex-1 bg-rose-500 text-white font-bold py-3 rounded-xl hover:bg-rose-600 shadow-md"><i className="fa-solid fa-xmark mr-2"></i> ตอบผิด</button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {qStatus !== 'checking' && (
+                                            <div className={`p-6 rounded-2xl border-l-4 ${qStatus === 'correct' ? 'bg-emerald-50 border-emerald-500' : 'bg-rose-50 border-rose-500'}`}>
+                                                <div className="flex items-center gap-2 font-bold mb-3 text-lg">
+                                                    {qStatus === 'correct' ? <span className="text-emerald-700"><i className="fa-solid fa-circle-check mr-2"></i>Correct! รับ EXP สำหรับ Waifu ของคุณ</span> : <span className="text-rose-700"><i className="fa-solid fa-circle-xmark mr-2"></i>Incorrect! ไม่เป็นไร จำไว้ใช้ในห้องสอบนะ</span>}
+                                                </div>
+                                                
+                                                <div className="bg-white p-4 rounded-xl border border-white/50 text-slate-700 leading-relaxed shadow-sm">
+                                                    <span className="font-bold text-slate-900 border-b-2 border-primary pb-1 inline-block mb-2">คำอธิบาย:</span><br/>
+                                                    {q.exp}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="bg-slate-50 border-t border-slate-200 p-4 flex items-center justify-between">
+                                <div className="flex-grow mr-6">
+                                    <div className="text-xs font-bold text-slate-400 uppercase mb-1">Momentum Bar {streak > 2 && <span className="text-primary float-right">Combo x{streak}</span>}</div>
+                                    <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                                        <div className={`h-full transition-all duration-500 ${getMomentumClass()}`} style={{width: `${Math.min((streak/10)*100, 100)}%`}}></div>
+                                    </div>
+                                </div>
+                                
+                                <button 
+                                    onClick={nextQuestion}
+                                    disabled={!qStatus || qStatus === 'checking'}
+                                    className={`px-8 py-3 rounded-xl font-bold text-white transition-all flex items-center gap-2 ${
+                                        (!qStatus || qStatus === 'checking') ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-slate-800 hover:bg-slate-900 shadow-md transform hover:-translate-y-1'
+                                    }`}
+                                >
+                                    {currentIdx === questionSet.length - 1 || (mode === 'survival' && hearts === 0) ? 'Finish' : 'Next'} <i className="fa-solid fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (screen === 'result') {
+                const percentage = Math.round((score / questionSet.length) * 100);
+                let rank = "Beginner";
+                let badgeColor = "text-slate-400";
+                let badgeIcon = "fa-medal";
+                
+                if (percentage === 100) { rank = "Master"; badgeColor = "text-purple-500"; badgeIcon = "fa-crown"; }
+                else if (percentage >= 80) { rank = "Gold"; badgeColor = "text-yellow-400"; }
+                else if (percentage >= 60) { rank = "Silver"; badgeColor = "text-slate-300"; }
+                else if (percentage >= 40) { rank = "Bronze"; badgeColor = "text-amber-600"; }
+
+                return (
+                    <div className="min-h-screen p-4 md:p-8 flex items-center justify-center">
+                        <div className="glass max-w-2xl w-full p-8 md:p-12 rounded-3xl text-center border-t-8 border-primary shadow-xl animate-bounce-in">
+                            <h2 className="text-3xl font-extrabold text-slate-800 mb-2">Quiz Completed!</h2>
+                            <p className="text-slate-500 mb-8 font-medium">Mode: {mode.toUpperCase()}</p>
+                            
+                            <div className="flex justify-center items-center gap-8 mb-8">
+                                <div className="text-center">
+                                    <div className="text-6xl font-black text-primary">{score}<span className="text-2xl text-slate-400">/{questionSet.length}</span></div>
+                                    <div className="text-sm font-bold text-slate-400 uppercase mt-2">Score</div>
+                                </div>
+                                <div className="h-16 w-px bg-slate-200"></div>
+                                <div className="text-center">
+                                    <div className={`text-6xl ${badgeColor}`}><i className={`fa-solid ${badgeIcon}`}></i></div>
+                                    <div className="text-sm font-bold text-slate-400 uppercase mt-2">Rank: {rank}</div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mb-8">
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                    <div className="text-slate-400 text-xs font-bold uppercase mb-1">Best Streak</div>
+                                    <div className="text-2xl font-bold text-warning"><i className="fa-solid fa-fire mr-2"></i>{bestStreak}</div>
+                                </div>
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                    <div className="text-slate-400 text-xs font-bold uppercase mb-1">Accuracy</div>
+                                    <div className="text-2xl font-bold text-primary"><i className="fa-solid fa-bullseye mr-2"></i>{percentage}%</div>
+                                </div>
+                            </div>
+
+                            {percentage < 100 && (
+                                <div className="bg-rose-50 text-rose-700 p-4 rounded-xl mb-8 font-medium text-sm">
+                                    <i className="fa-solid fa-lightbulb mr-2"></i>ข้อที่ตอบผิดถูกบันทึกลงใน <b className="font-bold">Wrong Notes</b> แล้ว กลับไปทบทวนได้ที่หน้าแรก
+                                </div>
+                            )}
+
+                            <button onClick={() => { sounds.click(); setScreen('menu'); }} className="bg-slate-800 text-white font-bold text-lg py-4 px-12 rounded-xl hover:bg-slate-900 transition-all shadow-lg transform hover:-translate-y-1 w-full sm:w-auto">
+                                <i className="fa-solid fa-house mr-2"></i> Back to Menu
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
 
 ```
