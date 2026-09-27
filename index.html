@@ -3,325 +3,570 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Ultimate IQ Test 💀</title>
+    <title>Midterm Examination - LMS Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-
         :root {
-            --bg-dark: #0f172a;
-            --card-bg: #1e293b;
-            --primary: #3b82f6;
-            --success: #10b981;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+            --lms-header: #1e293b;
+            --lms-primary: #0284c7;
+            --lms-bg: #f1f5f9;
+            --card-border: #cbd5e1;
+            --text-dark: #334155;
+            --success: #15803d;
+            --success-bg: #f0fdf4;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Roboto', sans-serif;
         }
 
         body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background-color: var(--lms-bg);
+            color: var(--text-dark);
             min-height: 100vh;
-            padding: 20px;
-            overflow-x: hidden;
         }
 
-        .container {
-            width: 100%;
-            max-width: 500px;
-            background-color: var(--card-bg);
+        /* Top University Navbar */
+        .university-nav {
+            background: var(--lms-header);
+            color: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--lms-primary);
+        }
+
+        .uni-brand {
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .uni-badge {
+            background: #e11d48;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+        }
+
+        .proctor-status {
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.1);
+            padding: 4px 12px;
             border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-            position: relative;
         }
 
-        /* Images */
-        .image-box {
-            width: 100%;
-            height: 250px;
-            border-radius: 12px;
-            overflow: hidden;
+        .dot-rec {
+            width: 8px;
+            height: 8px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        /* Main Container */
+        .main-wrapper {
+            max-width: 1100px;
+            margin: 24px auto;
+            padding: 0 16px;
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 24px;
+        }
+
+        /* Exam Content Card */
+        .exam-card {
+            background: white;
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .course-title {
+            font-size: 0.9rem;
+            color: #64748b;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .exam-header-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #0f172a;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
             margin-bottom: 20px;
-            background: #000;
+        }
+
+        .question-meta {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid var(--lms-primary);
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Image Display Box */
+        .img-container {
+            width: 100%;
+            max-height: 320px;
+            background: #e2e8f0;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             position: relative;
         }
 
-        .image-box img {
+        .img-container img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            animation: fadeIn 0.5s ease-in-out;
         }
 
-        /* Typography */
-        h2 {
-            font-size: 1.5rem;
-            font-weight: 900;
-            margin-bottom: 20px;
-            line-height: 1.4;
+        .img-fallback {
+            padding: 40px;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
         }
 
-        /* Input */
-        .input-group {
-            margin-bottom: 20px;
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #1e293b;
+            margin-bottom: 16px;
         }
 
-        input[type="text"] {
+        .answer-box {
+            margin-top: 16px;
+        }
+
+        textarea {
             width: 100%;
-            padding: 15px;
-            background: #0f172a;
-            border: 2px solid #334155;
-            border-radius: 10px;
-            color: white;
+            height: 90px;
+            padding: 12px;
+            border: 1px solid #94a3b8;
+            border-radius: 4px;
             font-size: 1rem;
             outline: none;
-            transition: all 0.3s;
+            resize: vertical;
         }
 
-        input[type="text"]:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        textarea:focus {
+            border-color: var(--lms-primary);
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
         }
 
-        /* Button */
-        button {
-            width: 100%;
-            padding: 16px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: 700;
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: 500;
             cursor: pointer;
-            transition: transform 0.1s, background 0.3s;
-        }
-
-        button:active {
-            transform: scale(0.98);
-        }
-
-        button:hover {
-            background: #2563eb;
-        }
-
-        /* Toast Notification */
-        .toast {
-            position: absolute;
-            top: -50px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--success);
-            color: white;
-            padding: 10px 25px;
-            border-radius: 30px;
-            font-weight: bold;
-            opacity: 0;
-            transition: all 0.3s ease;
-            z-index: 100;
-        }
-
-        .toast.show {
-            top: 20px;
-            opacity: 1;
-        }
-
-        /* Results Screen */
-        .hidden {
-            display: none !important;
-        }
-
-        .result-title {
-            text-align: center;
-            font-size: 1.8rem;
-            color: var(--success);
-            margin-bottom: 10px;
-        }
-
-        .result-subtitle {
-            text-align: center;
-            color: var(--text-muted);
-            margin-bottom: 25px;
-        }
-
-        .answer-reveal {
-            background: #0f172a;
-            border-left: 4px solid var(--primary);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            opacity: 0;
-            transform: translateX(-50px);
-            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .answer-reveal.show-motion {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        .q-text {
+            border: none;
             font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-bottom: 5px;
         }
 
-        .a-text {
+        .btn-primary {
+            background: var(--lms-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0369a1;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar-card {
+            background: white;
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            padding: 16px;
+            height: fit-content;
+        }
+
+        .sidebar-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #334155;
+        }
+
+        .q-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .q-num {
+            aspect-ratio: 1;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .q-num.active {
+            border: 2px solid var(--lms-primary);
+            font-weight: 700;
+        }
+
+        .q-num.answered {
+            background: #e0f2fe;
+            border-color: #0284c7;
+            color: #0369a1;
+        }
+
+        .timer-box {
+            background: #fff1f2;
+            border: 1px solid #fecdd3;
+            color: #be123c;
+            padding: 10px;
+            text-align: center;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 16px;
+        }
+
+        /* Results / Motion Screen */
+        .hidden { display: none !important; }
+
+        .result-header {
+            background: var(--success-bg);
+            border: 1px solid #bbf7d0;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 24px;
+        }
+
+        .result-score {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .reveal-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid var(--success);
+            padding: 16px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .reveal-card.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .q-label {
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .ans-label {
             font-size: 1.1rem;
             font-weight: 700;
-            color: var(--text-main);
+            color: #0f172a;
+            margin-top: 4px;
         }
 
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; filter: blur(5px); }
-            to { opacity: 1; filter: blur(0); }
+        .full-width {
+            grid-column: 1 / -1;
         }
     </style>
 </head>
 <body>
 
-    <!-- Quiz Container -->
-    <div class="container" id="quiz-screen">
-        <div class="toast" id="toast">✅ Correct! (Genius)</div>
-        
-        <div class="image-box">
-            <!-- ตั้งชื่อไฟล์รูปให้ตรงกับตรงนี้ -->
-            <img id="q-img" src="pic1.jpg" alt="Question Image" onerror="this.src='https://via.placeholder.com/500x250?text=pic1.jpg'">
+    <!-- University Header -->
+    <nav class="university-nav">
+        <div class="uni-brand">
+            🎓 UNIVERSITY EXAMINATION PORTAL
+            <span class="uni-badge">LOCKDOWN ACTIVE</span>
         </div>
+        <div class="proctor-status">
+            <div class="dot-rec"></div>
+            PROCTORING LIVE (CAM-01)
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-wrapper">
         
-        <h2 id="q-title">Who’s actually better than LeBron, tho?</h2>
-        
-        <form id="q-form">
-            <div class="input-group">
-                <input type="text" id="user-input" placeholder="Type your answer here, fr..." required autocomplete="off">
+        <!-- Left Column: Exam Card -->
+        <div class="exam-card" id="quiz-container">
+            <div class="course-title">GEN201: Advanced Logic & Cognitive Evaluation (Attempt 1)</div>
+            <h1 class="exam-header-title">Midterm Examination</h1>
+
+            <div class="question-meta">
+                <span id="q-meta-num">Question 1 of 5</span>
+                <span>Marked out of 2.00 | Flag question</span>
             </div>
-            <button type="submit">Submit Answer 🚀</button>
-        </form>
-    </div>
 
-    <!-- Results Container -->
-    <div class="container hidden" id="result-screen">
-        <div class="image-box">
-            <img src="ans.jpg" alt="Result Image" onerror="this.src='https://via.placeholder.com/500x250?text=ans.jpg'">
-        </div>
-        
-        <h1 class="result-title">100% CORRECT 🎉</h1>
-        <p class="result-subtitle">Here are the undisputed facts:</p>
+            <!-- Question Image Container -->
+            <div class="img-container">
+                <img id="q-img" src="pic1.jpg" alt="Question Image" onerror="handleImageError(this, 'pic1.jpg')">
+            </div>
 
-        <div id="answers-container">
-            <!-- คำตอบจะถูกสร้างและเด้งขึ้นมาที่นี่ -->
+            <!-- Question Text -->
+            <div class="question-text" id="q-text">
+                Who’s actually better than LeBron, tho?
+            </div>
+
+            <!-- Answer Box -->
+            <div class="answer-box">
+                <label style="font-size: 0.85rem; color: #64748b; display: block; margin-bottom: 6px;">
+                    Type your official response below:
+                </label>
+                <textarea id="user-ans" placeholder="Enter answer..."></textarea>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" onclick="prevQuestion()" id="btn-prev" disabled>Previous</button>
+                <button class="btn btn-primary" onclick="nextQuestion()" id="btn-next">Next Page ➔</button>
+            </div>
         </div>
+
+        <!-- Right Column: Navigation Sidebar -->
+        <div class="sidebar-card" id="sidebar">
+            <div class="sidebar-title">Time Remaining</div>
+            <div class="timer-box" id="timer">00:44:59</div>
+
+            <div class="sidebar-title">Quiz Navigation</div>
+            <div class="q-grid">
+                <div class="q-num active" id="nav-1" onclick="jumpTo(0)">1</div>
+                <div class="q-num" id="nav-2" onclick="jumpTo(1)">2</div>
+                <div class="q-num" id="nav-3" onclick="jumpTo(2)">3</div>
+                <div class="q-num" id="nav-4" onclick="jumpTo(3)">4</div>
+                <div class="q-num" id="nav-5" onclick="jumpTo(4)">5</div>
+            </div>
+
+            <button class="btn btn-secondary" style="width: 100%; font-size: 0.8rem;" onclick="submitExam()">
+                Finish attempt...
+            </button>
+        </div>
+
+        <!-- Results / Motion Screen (Initially Hidden) -->
+        <div class="exam-card full-width hidden" id="result-container">
+            <div class="result-header">
+                <div style="font-size: 0.9rem; color: #166534; font-weight: 500;">SUBMISSION RECEIVED & GRADED</div>
+                <div class="result-score">Grade: 10.00 out of 10.00 (100%)</div>
+                <div style="font-size: 0.85rem; color: #15803d; margin-top: 4px;">Status: Finished | Feedback: Outstanding Logic.</div>
+            </div>
+
+            <!-- Result Main Image -->
+            <div class="img-container" style="max-height: 380px; margin-bottom: 24px;">
+                <img src="ans.jpg" alt="Final Result Image" onerror="handleImageError(this, 'ans.jpg')">
+            </div>
+
+            <h3 style="margin-bottom: 16px; color: #0f172a;">Official Model Solutions (Answer Key):</h3>
+            
+            <div id="reveal-list">
+                <!-- Answer items will animate here -->
+            </div>
+        </div>
+
     </div>
 
     <script>
-        // ข้อมูลคำถามและคำตอบที่ตกลงกันไว้
-        const quizData = [
+        // Questions & Agreed Answers Data
+        const examQuestions = [
             {
+                num: 1,
                 q: "1. Who’s actually better than LeBron, tho?",
                 img: "pic1.jpg",
-                realAns: "Me. 💀"
+                modelAns: "Me. 💀"
             },
             {
+                num: 2,
                 q: "2. Who’s the smartest person alive, fr?",
                 img: "pic2.jpg",
-                realAns: "IDK."
+                modelAns: "IDK."
             },
             {
+                num: 3,
                 q: "3. Who decided pineapple belongs on pizza, tho?",
                 img: "pic3.jpg",
-                realAns: "Everyone except me and Italians. 💀"
+                modelAns: "Everyone except me and Italians. 💀"
             },
             {
+                num: 4,
                 q: "4. Yo, you ever eat a hot dog?",
                 img: "pic4.jpg",
-                realAns: "Nah, I’ve never eaten a"
+                modelAns: "Nah, I’ve never eaten a "
             },
             {
+                num: 5,
                 q: "5. Aight, who’s better, Ronaldo or Messi?",
                 img: "pic5.jpg",
-                realAns: "Me. 🐐" // เพิ่มเฉลยข้อ 5 ให้เข้ากับธีม
+                modelAns: "Me. 🐐"
             }
         ];
 
-        let currentIndex = 0;
+        let currentIdx = 0;
+        let userAnswers = ["", "", "", "", ""];
 
-        const quizScreen = document.getElementById('quiz-screen');
-        const resultScreen = document.getElementById('result-screen');
-        const qTitle = document.getElementById('q-title');
-        const qImg = document.getElementById('q-img');
-        const userInput = document.getElementById('user-input');
-        const qForm = document.getElementById('q-form');
-        const toast = document.getElementById('toast');
-        const answersContainer = document.getElementById('answers-container');
+        // Smart image fallback handler
+        function handleImageError(imgEl, filename) {
+            const parent = imgEl.parentElement;
+            parent.innerHTML = `
+                <div class="img-fallback">
+                    📷 <strong>[Image Attachment: ${filename}]</strong><br>
+                    <span style="font-size: 0.75rem;">(Place '${filename}' in the same folder to view full image)</span>
+                </div>
+            `;
+        }
 
-        // โหลดข้อแรก
-        loadQuestion();
+        function loadQuestion(idx) {
+            const q = examQuestions[idx];
+            document.getElementById('q-meta-num').innerText = `Question ${q.num} of 5`;
+            document.getElementById('q-text').innerText = q.q;
+            document.getElementById('user-ans').value = userAnswers[idx];
 
-        qForm.addEventListener('submit', function(e) {
-            e.preventDefault();
+            // Image reload handling
+            const imgContainer = document.querySelector('.img-container');
+            imgContainer.innerHTML = `<img id="q-img" src="${q.img}" alt="Question Image" onerror="handleImageError(this, '${q.img}')">`;
+
+            // Navigation UI update
+            for(let i=1; i<=5; i++) {
+                const navEl = document.getElementById(`nav-${i}`);
+                navEl.classList.remove('active');
+                if(i - 1 === idx) navEl.classList.add('active');
+            }
+
+            // Button status
+            document.getElementById('btn-prev').disabled = (idx === 0);
+            if(idx === 4) {
+                document.getElementById('btn-next').innerText = "Submit Exam ➔";
+                document.getElementById('btn-next').style.background = "#16a34a";
+            } else {
+                document.getElementById('btn-next').innerText = "Next Page ➔";
+                document.getElementById('btn-next').style.background = "#0284c7";
+            }
+        }
+
+        function saveCurrentAnswer() {
+            userAnswers[currentIdx] = document.getElementById('user-ans').value;
+            if(userAnswers[currentIdx].trim() !== "") {
+                document.getElementById(`nav-${currentIdx+1}`).classList.add('answered');
+            }
+        }
+
+        function nextQuestion() {
+            saveCurrentAnswer();
+            if(currentIdx < 4) {
+                currentIdx++;
+                loadQuestion(currentIdx);
+            } else {
+                submitExam();
+            }
+        }
+
+        function prevQuestion() {
+            saveCurrentAnswer();
+            if(currentIdx > 0) {
+                currentIdx--;
+                loadQuestion(currentIdx);
+            }
+        }
+
+        function jumpTo(idx) {
+            saveCurrentAnswer();
+            currentIdx = idx;
+            loadQuestion(currentIdx);
+        }
+
+        function submitExam() {
+            saveCurrentAnswer();
             
-            // ไม่ว่าพิมพ์อะไรมา ให้โชว์ว่า "ถูกต้อง" เสมอ
-            showToast();
+            // Hide exam UI & sidebar
+            document.getElementById('quiz-container').classList.add('hidden');
+            document.getElementById('sidebar').classList.add('hidden');
+            
+            // Show result screen
+            const resContainer = document.getElementById('result-container');
+            resContainer.classList.remove('hidden');
 
-            // หน่วงเวลาให้เห็นป๊อปอัพว่าตอบถูกแป๊บนึง แล้วเปลี่ยนข้อ
-            setTimeout(() => {
-                currentIndex++;
-                
-                if (currentIndex < quizData.length) {
-                    loadQuestion();
-                } else {
-                    showResults();
-                }
-            }, 800);
-        });
-
-        function loadQuestion() {
-            // อัปเดตคำถามและรูปภาพ
-            const currentData = quizData[currentIndex];
-            qTitle.innerText = currentData.q;
-            qImg.src = currentData.img;
-            userInput.value = ''; // ล้างช่องพิมพ์
-            userInput.focus();
-        }
-
-        function showToast() {
-            toast.classList.add('show');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 700);
-        }
-
-        function showResults() {
-            // ซ่อนหน้าคำถาม โชว์หน้าสรุปผล
-            quizScreen.classList.add('hidden');
-            resultScreen.classList.remove('hidden');
-
-            // สร้าง Element สำหรับเฉลยทีละข้อ
-            quizData.forEach((item, index) => {
-                const div = document.createElement('div');
-                div.className = 'answer-reveal';
-                div.innerHTML = `
-                    <div class="q-text">${item.q}</div>
-                    <div class="a-text">➔ ${item.realAns}</div>
+            // Render sequential reveal with motion
+            const revealList = document.getElementById('reveal-list');
+            examQuestions.forEach((q, i) => {
+                const card = document.createElement('div');
+                card.className = 'reveal-card';
+                card.innerHTML = `
+                    <div class="q-label">${q.q}</div>
+                    <div class="ans-label">➔ Official Answer: ${q.modelAns}</div>
                 `;
-                answersContainer.appendChild(div);
+                revealList.appendChild(card);
 
-                // ตั้งเวลาให้เด้งขึ้นมาทีละข้อ (Motion Effect) ข้อละ 0.4 วินาที
+                // Sequential Motion Delay
                 setTimeout(() => {
-                    div.classList.add('show-motion');
-                }, 300 + (index * 400));
+                    card.classList.add('show');
+                }, 300 + (i * 350));
             });
         }
+
+        // Timer Simulation
+        let totalSeconds = 2700;
+        setInterval(() => {
+            if(totalSeconds > 0) {
+                totalSeconds--;
+                const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+                const s = (totalSeconds % 60).toString().padStart(2, '0');
+                document.getElementById('timer').innerText = `00:${m}:${s}`;
+            }
+        }, 1000);
+
+        // Initial Load
+        loadQuestion(0);
     </script>
 </body>
 </html>
