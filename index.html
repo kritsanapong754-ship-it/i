@@ -1,486 +1,488 @@
-<!DOCTYPE html>
+html_content = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Are You Actually Smart?</title>
+    <title>Standardized Cognitive Assessment (SCAP)</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for Realistic IQ Breakdown -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         :root {
-            --bg-dark: #090d16;
-            --card-bg: rgba(18, 24, 38, 0.75);
-            --border-color: rgba(255, 255, 255, 0.12);
-            --accent-blue: #3b82f6;
-            --accent-purple: #8b5cf6;
-            --accent-green: #10b981;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
+            --bg-page: #f3f4f6;
+            --bg-card: #ffffff;
+            --border-light: #e5e7eb;
+            --border-dark: #d1d5db;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --text-dark: #111827;
+            --text-normal: #374151;
+            --text-light: #6b7280;
+            --danger: #dc2626;
+            --success: #059669;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
         }
 
         body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
+            background-color: var(--bg-page);
+            color: var(--text-normal);
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Top Navigation Bar */
+        .navbar {
+            width: 100%;
+            background-color: #ffffff;
+            border-bottom: 1px solid var(--border-light);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text-dark);
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-logo {
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            color: white;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow-x: hidden;
-            background-image: 
-                radial-gradient(circle at 15% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 85% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 40%);
+            border-radius: 4px;
+            font-size: 12px;
         }
 
-        /* Ambient Glow Effect */
-        .grid-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-size: 50px 50px;
-            background-image: 
-                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            z-index: -1;
+        .nav-right {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
 
+        /* Main Container */
         .container {
-            width: 90%;
-            max-width: 650px;
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
+            width: 100%;
+            max-width: 720px;
+            margin: 40px auto;
+            background: var(--bg-card);
+            border: 1px solid var(--border-dark);
+            border-radius: 8px;
             padding: 40px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
         }
 
-        /* Headers & Typography */
         h1, h2, h3 {
-            font-family: 'Space Grotesk', sans-serif;
-            letter-spacing: -0.5px;
+            color: var(--text-dark);
+            margin-bottom: 8px;
         }
 
-        .badge {
-            display: inline-block;
-            padding: 6px 14px;
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            color: var(--accent-blue);
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            border-radius: 100px;
-            margin-bottom: 20px;
+        p {
+            line-height: 1.6;
+            color: var(--text-normal);
         }
 
-        /* Inputs & Buttons */
-        .input-group {
-            margin: 25px 0;
+        /* Inputs & Forms */
+        .form-group {
+            margin-bottom: 24px;
             text-align: left;
         }
 
         label {
             display: block;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-size: 0.875rem;
             font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 6px;
         }
 
         input[type="text"] {
             width: 100%;
-            padding: 16px 20px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            color: #fff;
+            padding: 12px 16px;
+            border: 1px solid var(--border-dark);
+            border-radius: 6px;
             font-size: 1rem;
-            outline: none;
-            transition: all 0.3s ease;
+            color: var(--text-dark);
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         input[type="text"]:focus {
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
-        .btn {
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-            border: none;
-            border-radius: 12px;
-            color: white;
-            font-size: 1rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
-            margin-top: 10px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 35px rgba(139, 92, 246, 0.4);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        /* Progress Bar */
-        .progress-container {
-            width: 100%;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            margin-bottom: 30px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
-            transition: width 0.4s ease;
-        }
-
-        /* Quiz Section */
-        .question-text {
-            font-size: 1.35rem;
-            font-weight: 700;
-            margin-bottom: 25px;
-            line-height: 1.4;
-        }
-
-        .options-grid {
+        .checkbox-group {
             display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .option-card {
-            padding: 16px 20px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            cursor: pointer;
-            text-align: left;
-            transition: all 0.2s ease;
-            font-size: 0.95rem;
-        }
-
-        .option-card:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: var(--accent-blue);
-            transform: translateX(4px);
-        }
-
-        /* Feedback Popup / Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(5, 8, 15, 0.85);
-            backdrop-filter: blur(10px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .modal-content {
-            background: var(--card-bg);
-            border: 1px solid var(--accent-green);
-            padding: 30px;
-            border-radius: 20px;
-            text-align: center;
-            max-width: 450px;
-            width: 90%;
-            box-shadow: 0 0 40px rgba(16, 185, 129, 0.2);
-            transform: scale(0.9);
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .modal-overlay.active .modal-content {
-            transform: scale(1);
-        }
-
-        .correct-tag {
-            color: var(--accent-green);
-            font-weight: 700;
-            letter-spacing: 1px;
-            font-size: 0.85rem;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .feedback-img {
-            width: 100%;
-            max-height: 250px;
-            object-fit: cover;
-            border-radius: 12px;
-            margin: 15px 0;
-            border: 1px solid var(--border-color);
-        }
-
-        .answer-display {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 20px;
-        }
-
-        /* Result Page */
-        .result-img {
-            width: 100%;
-            max-height: 280px;
-            object-fit: cover;
-            border-radius: 16px;
-            border: 2px solid var(--accent-purple);
-            margin: 20px 0;
-            box-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
-        }
-
-        .iq-score {
-            font-size: 3rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #60a5fa, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin: 10px 0;
-        }
-
-        .ayanokoji-statement {
-            font-size: 1.1rem;
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.05);
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 24px;
+            background: #f9fafb;
             padding: 16px;
-            border-radius: 12px;
-            border-left: 4px solid var(--accent-purple);
-            margin-top: 15px;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+        }
+
+        .checkbox-group input {
+            margin-top: 4px;
+        }
+
+        .checkbox-group label {
+            font-weight: 400;
+            font-size: 0.85rem;
+            color: var(--text-normal);
+            margin: 0;
             line-height: 1.5;
         }
 
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .btn {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px 24px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        /* Quiz UI */
+        .exam-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-light);
+            margin-bottom: 24px;
+        }
+
+        .timer {
+            font-family: monospace;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--danger);
+            background: #fef2f2;
+            padding: 6px 12px;
+            border: 1px solid #f87171;
+            border-radius: 4px;
+        }
+
+        .progress-text {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .question-box {
+            margin-bottom: 32px;
+        }
+
+        .question-text {
+            font-size: 1.15rem;
+            font-weight: 500;
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        .question-context {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        /* Loading Spinner */
+        .loader-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-light);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Result UI */
+        .report-header {
+            text-align: center;
+            border-bottom: 2px solid var(--text-dark);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .fsiq-score {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin: 10px 0;
+        }
+
+        .percentile {
+            font-size: 1rem;
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #f9fafb;
+            border: 1px solid var(--border-light);
+            padding: 16px;
+            border-radius: 6px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            margin-top: 20px;
+            border: 1px solid var(--border-light);
+            padding: 16px;
+            border-radius: 6px;
+            background: #ffffff;
         }
 
         .hidden { display: none !important; }
-        
-        .fade-in-out {
-            animation: fadeInOut 2s ease-in-out forwards;
-        }
-
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: scale(0.95); }
-            20% { opacity: 1; transform: scale(1); }
-            80% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(1.05); }
-        }
     </style>
 </head>
 <body>
 
-    <div class="grid-bg"></div>
+    <nav class="navbar">
+        <div class="brand">
+            <div class="brand-logo">G</div>
+            Global Cognitive Institute
+        </div>
+        <div class="nav-right">
+            <span>Session ID: <span id="session-id" style="font-family: monospace;">---</span></span>
+            <span style="display: flex; align-items: center; gap: 4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                Proctored
+            </span>
+        </div>
+    </nav>
 
-    <!-- MAIN CONTAINER -->
     <div class="container">
         
         <!-- STEP 1: REGISTRATION -->
         <div id="step-register">
-            <span class="badge">OFFICIAL PROTOCOL 2026</span>
-            <h1>Are You Actually Smart?</h1>
-            <p style="color: var(--text-muted); margin-top: 8px; font-size: 0.95rem;">
-                A totally serious test to determine how smart you really are.
+            <h1 style="font-size: 1.5rem;">Standardized Cognitive Assessment (SCAP)</h1>
+            <p style="color: var(--text-light); margin-bottom: 30px; font-size: 0.95rem;">
+                Authorized evaluation of fluid intelligence, logical reasoning, and working memory. Please complete the candidate registration to begin the timed session.
             </p>
 
             <form id="start-form" onsubmit="startQuiz(event)">
-                <div class="input-group">
-                    <label for="username">YOUR NAME</label>
-                    <input type="text" id="username" placeholder="Enter your name..." required autocomplete="off">
+                <div class="form-group">
+                    <label for="username">Legal Name (as shown on ID)</label>
+                    <input type="text" id="username" placeholder="First Last" required autocomplete="off">
                 </div>
-                <button type="submit" class="btn">START THE TEST ➔</button>
+                
+                <div class="form-group">
+                    <label for="candidate-id">Candidate ID (Optional)</label>
+                    <input type="text" id="candidate-id" placeholder="e.g., GCI-2026-XXXX" autocomplete="off">
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="terms" required>
+                    <label for="terms">
+                        I hereby declare that I will complete this assessment without the use of external aids, calculators, or unauthorized materials. I understand that my session is recorded for academic integrity.
+                    </label>
+                </div>
+
+                <button type="submit" class="btn">BEGIN PROCTORED EXAM</button>
             </form>
-
-            <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 25px; text-align: center; font-weight: 600; opacity: 0.7;">
-                5 Questions &bull; 100% Scientific &bull; Definitely Legit
-            </p>
         </div>
 
-        <!-- STEP 1.5: TRANSITION -->
-        <div id="step-transition" class="hidden" style="text-align: center; padding: 40px 0;">
-            <h1 id="transition-greeting" style="background: linear-gradient(135deg, #60a5fa, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></h1>
-            <p style="color: var(--text-muted); margin-top: 15px; font-size: 1.1rem;">
-                Your intellectual journey begins now.
-            </p>
-        </div>
-
-        <!-- STEP 2: QUIZ -->
+        <!-- STEP 2: THE EXAM -->
         <div id="step-quiz" class="hidden">
-            <div class="progress-container">
-                <div class="progress-bar" id="progress-bar"></div>
+            <div class="exam-header">
+                <div>
+                    <div class="progress-text" id="question-number">ITEM 1 OF 5</div>
+                    <div style="font-size: 0.8rem; color: var(--text-light); margin-top: 4px;">Matrix Reasoning & Logic</div>
+                </div>
+                <div class="timer" id="timer">15:00</div>
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <span class="badge" id="question-number" style="margin:0;">QUESTION 1/5</span>
-                <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;" id="candidate-display"></span>
+            <div class="question-box">
+                <div class="question-text" id="question-title"></div>
+                <div class="question-context" id="question-desc"></div>
             </div>
 
-            <div class="question-text" id="question-title"></div>
-
-            <div class="options-grid" id="options-container"></div>
-
-            <form id="type-answer-form" onsubmit="handleCustomSubmit(event)" style="margin-top: 15px;">
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="custom-answer" placeholder="Or type your exact answer here..." autocomplete="off">
-                    <button type="submit" class="btn" style="width: auto; padding: 0 25px; margin: 0;">SUBMIT</button>
+            <form id="exam-answer-form" onsubmit="submitExamAnswer(event)">
+                <div class="form-group">
+                    <label for="exam-input">Candidate Response:</label>
+                    <input type="text" id="exam-input" required autocomplete="off" placeholder="Enter your final answer...">
+                </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <button type="submit" class="btn" style="width: auto; padding: 10px 30px;">NEXT ITEM</button>
                 </div>
             </form>
         </div>
 
-        <!-- STEP 3: FINAL RESULTS -->
-        <div id="step-result" class="hidden" style="text-align: center;">
-            <span class="badge" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green); border-color: rgba(16, 185, 129, 0.3);">
-                OFFICIAL CERTIFICATION
-            </span>
-            <h1 style="margin-top: 5px;">Assessment Complete</h1>
-            <p style="color: var(--text-muted); font-size: 0.9rem;" id="final-candidate-name"></p>
-
-            <img id="ans-image" src="ans.jpg" alt="Result Image" class="result-img" onerror="this.src='https://via.placeholder.com/600x350/121826/ffffff?text=Ayanokoji+Kiyotaka+IQ+Level'">
-
-            <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Evaluated Intelligence Quotient</div>
-            <div class="iq-score">IQ: BEYOND MEASURE</div>
-
-            <div class="ayanokoji-statement">
-                <strong>EVALUATION RESULT:</strong><br>
-                Your IQ is equivalent to <strong>Ayanokoji Kiyotaka</strong>.
-            </div>
-
-            <button onclick="location.reload()" class="btn" style="margin-top: 25px;">RE-EVALUATE ↺</button>
+        <!-- STEP 3: LOADING -->
+        <div id="step-loading" class="hidden loader-container">
+            <div class="spinner"></div>
+            <h3 style="margin-top: 10px;">Processing Cognitive Data</h3>
+            <p style="font-size: 0.85rem; color: var(--text-light);">Cross-referencing global percentiles...</p>
         </div>
 
-    </div>
+        <!-- STEP 4: FINAL RESULTS -->
+        <div id="step-result" class="hidden">
+            <div class="report-header">
+                <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-light); letter-spacing: 1px; text-transform: uppercase;">Official Evaluation Report</div>
+                <h1 style="margin-top: 10px;">Candidate Profile</h1>
+                <p id="final-candidate-name" style="font-family: monospace; color: var(--text-normal);"></p>
+            </div>
 
-    <!-- FEEDBACK MODAL -->
-    <div class="modal-overlay" id="feedback-modal">
-        <div class="modal-content">
-            <div class="correct-tag">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                VERIFIED CORRECT ANSWER
+            <div style="text-align: center; margin-bottom: 30px;">
+                <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-normal);">Full Scale Intelligence Quotient (FSIQ)</div>
+                <div class="fsiq-score" id="fsiq-display">128</div>
+                <div class="percentile">96.8th Percentile - Superior Intelligence</div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Fluid Reasoning (FRI)</div>
+                    <div class="stat-value">132</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Working Memory (WMI)</div>
+                    <div class="stat-value">124</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Verbal Comprehension (VCI)</div>
+                    <div class="stat-value">121</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Processing Speed (PSI)</div>
+                    <div class="stat-value">118</div>
+                </div>
+            </div>
+
+            <h3 style="font-size: 1rem; margin-top: 20px;">Subtest Distribution</h3>
+            <div class="chart-container">
+                <canvas id="iqRadarChart"></canvas>
             </div>
             
-            <img id="feedback-img" src="" alt="Feedback Image" class="feedback-img" onerror="this.src='https://via.placeholder.com/400x250/121826/ffffff?text=Response+Verified'">
-
-            <div class="answer-display" id="modal-answer-text"></div>
-
-            <button class="btn" onclick="nextQuestion()">NEXT QUESTION ➔</button>
+            <div style="margin-top: 30px; padding: 16px; background: #fef2f2; border: 1px solid #f87171; border-radius: 6px; font-size: 0.85rem; color: #991b1b;">
+                <strong>Notice:</strong> This report is valid for 24 months. Results are calibrated according to standard deviations of 15 (Mean = 100).
+            </div>
         </div>
+
     </div>
 
     <script>
-        // Data Structure
+        // Realistic cognitive assessment questions
         const quizData = [
             {
-                q: "1. Who’s actually better than LeBron, tho?",
-                a: "Me. 💀",
-                options: ["Me. 💀", "Michael Jordan", "Kobe Bryant", "Nobody alive"],
-                img: "pic1.jpg"
+                q: "A bat and a ball cost $1.10 in total. The bat costs $1.00 more than the ball. How much does the ball cost?",
+                desc: "Provide your answer in cents (e.g., 5)."
             },
             {
-                q: "2. Who’s the smartest person alive, fr?",
-                a: "IDK.",
-                options: ["IDK.", "Albert Einstein's ghost", "Nikola Tesla", "Terence Tao"],
-                img: "pic2.jpg"
+                q: "Identify the next number in the sequence: 2, 6, 12, 20, 30, ?",
+                desc: "Enter the exact integer value."
             },
             {
-                q: "3. Who decided pineapple belongs on pizza, tho?",
-                a: "Everyone except me and Italians. 💀",
-                options: ["Everyone except me and Italians. 💀", "Sam Panopoulos in 1962", "The Canadian Government", "A rogue chef"],
-                img: "pic3.jpg"
+                q: "If some Alphas are Betas, and all Betas are Gammas, which of the following is definitively true?",
+                desc: "Type 'A' for Some Alphas are Gammas, 'B' for All Alphas are Gammas, 'C' for No Alphas are Gammas."
             },
             {
-                q: "4. Yo, you ever eat a hot dog?",
-                a: "Nah, I’ve never eaten a dog. 💀",
-                options: ["Nah, I’ve never eaten a dog. 💀", "Yes, with mustard", "Only at baseball games", "Every single day"],
-                img: "pic4.jpg"
+                q: "Mary is 16 years old. She is currently 4 times as old as her brother. How old will Mary be when she is twice as old as her brother?",
+                desc: "Enter the integer age of Mary."
             },
             {
-                q: "5. Aight, who’s better, Ronaldo or Messi?",
-                a: "My mom. 💀",
-                options: ["My mom. 💀", "Cristiano Ronaldo", "Lionel Messi", "Pelé"],
-                img: "pic5.jpg"
+                q: "Which number is the odd one out: 9, 16, 25, 36, 42, 49?",
+                desc: "Identify the pattern anomaly."
             }
         ];
 
         let currentStep = 0;
         let userName = "";
+        let timerInterval;
+        let timeLeft = 900; // 15 minutes in seconds
 
-        // Web Audio API Sound Generator
-        function playCorrectSound() {
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                const ctx = new AudioContext();
-                
-                const osc1 = ctx.createOscillator();
-                const osc2 = ctx.createOscillator();
-                const gain = ctx.createGain();
+        // Generate a fake session ID
+        document.getElementById('session-id').innerText = 'SCAP-' + Math.floor(Math.random() * 90000 + 10000);
 
-                osc1.type = 'sine';
-                osc2.type = 'sine';
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
 
-                osc1.frequency.setValueAtTime(523.25, ctx.currentTime);
-                osc2.frequency.setValueAtTime(659.25, ctx.currentTime);
-
-                gain.gain.setValueAtTime(0.15, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
-
-                osc1.connect(gain);
-                osc2.connect(gain);
-                gain.connect(ctx.destination);
-
-                osc1.start();
-                osc2.start();
-                osc1.stop(ctx.currentTime + 0.6);
-                osc2.stop(ctx.currentTime + 0.6);
-            } catch (e) {
-                console.log("Audio play blocked by browser policy.");
-            }
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').innerText = formatTime(timeLeft);
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    processResults(); // Force finish
+                }
+            }, 1000);
         }
 
         function startQuiz(e) {
@@ -489,89 +491,125 @@
             if(!input) return;
             
             userName = input;
-            document.getElementById('candidate-display').innerText = userName.toUpperCase();
             
-            // Hide register, show transition screen
             document.getElementById('step-register').classList.add('hidden');
-            const transitionEl = document.getElementById('step-transition');
-            transitionEl.classList.remove('hidden');
+            document.getElementById('step-quiz').classList.remove('hidden');
             
-            // Set transition text and animate
-            document.getElementById('transition-greeting').innerText = `Welcome, ${userName.toUpperCase()}.`;
-            transitionEl.classList.add('fade-in-out');
-            
-            // Wait for animation to finish, then load quiz
-            setTimeout(() => {
-                transitionEl.classList.add('hidden');
-                document.getElementById('step-quiz').classList.remove('hidden');
-                loadQuestion();
-            }, 2000);
+            startTimer();
+            loadQuestion();
         }
 
         function loadQuestion() {
             const data = quizData[currentStep];
             
-            // Progress Bar
-            const progressPct = ((currentStep) / quizData.length) * 100;
-            document.getElementById('progress-bar').style.width = `${progressPct}%`;
-            
-            // Text
-            document.getElementById('question-number').innerText = `QUESTION ${currentStep + 1}/${quizData.length}`;
+            document.getElementById('question-number').innerText = `ITEM ${currentStep + 1} OF ${quizData.length}`;
             document.getElementById('question-title').innerText = data.q;
+            document.getElementById('question-desc').innerText = data.desc;
             
-            // Render Options
-            const container = document.getElementById('options-container');
-            container.innerHTML = '';
-            
-            data.options.forEach(opt => {
-                const card = document.createElement('div');
-                card.className = 'option-card';
-                card.innerText = opt;
-                card.onclick = () => triggerAnswer();
-                container.appendChild(card);
-            });
-
-            document.getElementById('custom-answer').value = '';
+            const inputEl = document.getElementById('exam-input');
+            inputEl.value = '';
+            inputEl.focus();
         }
 
-        function handleCustomSubmit(e) {
+        function submitExamAnswer(e) {
             e.preventDefault();
-            triggerAnswer();
-        }
-
-        function triggerAnswer() {
-            const data = quizData[currentStep];
-            
-            // Play Audio
-            playCorrectSound();
-
-            // Set Feedback Content
-            document.getElementById('feedback-img').src = data.img;
-            document.getElementById('modal-answer-text').innerText = data.a;
-
-            // Show Modal
-            document.getElementById('feedback-modal').classList.add('active');
-        }
-
-        function nextQuestion() {
-            // Hide Modal
-            document.getElementById('feedback-modal').classList.remove('active');
+            const val = document.getElementById('exam-input').value.trim();
+            if(!val) return;
 
             currentStep++;
 
             if(currentStep < quizData.length) {
-                setTimeout(loadQuestion, 200);
+                loadQuestion();
             } else {
-                showResults();
+                clearInterval(timerInterval);
+                processResults();
             }
         }
 
-        function showResults() {
-            document.getElementById('progress-bar').style.width = `100%`;
+        function processResults() {
             document.getElementById('step-quiz').classList.add('hidden');
+            document.getElementById('step-loading').classList.remove('hidden');
+
+            setTimeout(() => {
+                document.getElementById('step-loading').classList.add('hidden');
+                showResults();
+            }, 3000); // Fake processing time
+        }
+
+        function showResults() {
             document.getElementById('step-result').classList.remove('hidden');
-            document.getElementById('final-candidate-name').innerText = `Candidate Identifier: ${userName}`;
+            document.getElementById('final-candidate-name').innerText = `Name: ${userName.toUpperCase()} | DOB: VERIFIED`;
+
+            // Randomize score slightly for realism, but keep it high
+            const baseScore = 125;
+            const variance = Math.floor(Math.random() * 10) - 2; 
+            const finalScore = baseScore + variance;
+            document.getElementById('fsiq-display').innerText = finalScore;
+
+            // Render Radar Chart with realistic profile
+            const ctx = document.getElementById('iqRadarChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Matrix Reasoning', 'Figure Weights', 'Digit Span', 'Arithmetic', 'Vocabulary', 'Symbol Search'],
+                    datasets: [{
+                        label: 'Candidate Standard Score',
+                        data: [135, 125, 115, 128, 110, 105],
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderColor: '#2563eb',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#2563eb',
+                        pointHoverBackgroundColor: '#2563eb',
+                        pointHoverBorderColor: '#fff'
+                    }, {
+                        label: 'Population Mean',
+                        data: [100, 100, 100, 100, 100, 100],
+                        backgroundColor: 'rgba(107, 114, 128, 0.05)',
+                        borderColor: '#9ca3af',
+                        borderDash: [5, 5],
+                        borderWidth: 1,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            min: 70,
+                            max: 150,
+                            angleLines: { color: 'rgba(0, 0, 0, 0.05)' },
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                            pointLabels: {
+                                color: '#374151',
+                                font: { size: 11, family: 'Inter', weight: '500' }
+                            },
+                            ticks: { 
+                                stepSize: 15,
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { 
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                boxWidth: 8
+                            }
+                        }
+                    }
+                }
+            });
         }
     </script>
 </body>
 </html>
+"""
+
+with open("index.html", "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+print("Realistic Assessment UI generated successfully.")
+
