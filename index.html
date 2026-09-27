@@ -1,572 +1,577 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Midterm Examination - LMS Portal</title>
+    <title>Smart LMS - Official Examination Portal</title>
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --lms-header: #1e293b;
-            --lms-primary: #0284c7;
-            --lms-bg: #f1f5f9;
-            --card-border: #cbd5e1;
-            --text-dark: #334155;
-            --success: #15803d;
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --bg-main: #f8fafc;
+            --card-bg: #ffffff;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #16a34a;
             --success-bg: #f0fdf4;
+            --danger: #dc2626;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Prompt', 'Sarabun', sans-serif;
         }
 
         body {
-            background-color: var(--lms-bg);
+            background-color: var(--bg-main);
             color: var(--text-dark);
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Top University Navbar */
-        .university-nav {
-            background: var(--lms-header);
+        .navbar {
+            background: #1e293b;
             color: white;
             padding: 12px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 3px solid var(--lms-primary);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        .uni-brand {
-            font-size: 1.1rem;
-            font-weight: 700;
+        .brand {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
         }
 
-        .uni-badge {
-            background: #e11d48;
+        .brand-badge {
+            background: #0284c7;
             color: white;
-            font-size: 0.7rem;
-            padding: 2px 6px;
+            font-size: 0.75rem;
+            padding: 2px 8px;
             border-radius: 4px;
-            font-weight: 700;
+            font-weight: 500;
         }
 
-        .proctor-status {
-            font-size: 0.85rem;
+        .proctor-badge {
             display: flex;
             align-items: center;
             gap: 8px;
             background: rgba(255,255,255,0.1);
-            padding: 4px 12px;
+            padding: 6px 14px;
             border-radius: 20px;
+            font-size: 0.85rem;
         }
 
-        .dot-rec {
+        .pulse-dot {
             width: 8px;
             height: 8px;
-            background-color: #ef4444;
+            background: #ef4444;
             border-radius: 50%;
-            animation: pulse 1s infinite;
+            animation: pulse 1.2s infinite;
         }
 
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; }
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
         }
 
-        /* Main Container */
-        .main-wrapper {
-            max-width: 1100px;
-            margin: 24px auto;
-            padding: 0 16px;
-            display: grid;
-            grid-template-columns: 1fr 280px;
-            gap: 24px;
-        }
-
-        /* Exam Content Card */
-        .exam-card {
-            background: white;
-            border: 1px solid var(--card-border);
-            border-radius: 6px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-
-        .course-title {
-            font-size: 0.9rem;
-            color: #64748b;
-            font-weight: 500;
-            margin-bottom: 4px;
-        }
-
-        .exam-header-title {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: #0f172a;
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 12px;
-            margin-bottom: 20px;
-        }
-
-        .question-meta {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-left: 4px solid var(--lms-primary);
-            padding: 8px 12px;
-            font-size: 0.85rem;
-            margin-bottom: 16px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        /* Image Display Box */
-        .img-container {
+        /* Container Layout */
+        .container {
+            max-width: 800px;
             width: 100%;
-            max-height: 320px;
-            background: #e2e8f0;
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            margin: 30px auto;
+            padding: 0 20px;
+            flex: 1;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -4px rgba(0,0,0,0.02);
             position: relative;
         }
 
-        .img-container img {
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s;
+            outline: none;
+            background: #f8fafc;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Stepper Progress Bar */
+        .stepper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+        }
+
+        .step-info {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .timer {
+            font-family: monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--danger);
+            background: #fef2f2;
+            padding: 4px 12px;
+            border-radius: 6px;
+            border: 1px solid #fecdd3;
+        }
+
+        /* Image Display Frame with Smart Fallback */
+        .image-frame {
+            width: 100%;
+            height: 280px;
+            background: #0f172a;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .image-frame img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
 
-        .img-fallback {
-            padding: 40px;
+        .fallback-box {
+            color: #94a3b8;
             text-align: center;
-            color: #64748b;
-            font-size: 0.9rem;
+            padding: 20px;
         }
 
+        .fallback-box svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 8px;
+            stroke: #64748b;
+        }
+
+        /* Question Typography */
         .question-text {
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: #1e293b;
-            margin-bottom: 16px;
-        }
-
-        .answer-box {
-            margin-top: 16px;
-        }
-
-        textarea {
-            width: 100%;
-            height: 90px;
-            padding: 12px;
-            border: 1px solid #94a3b8;
-            border-radius: 4px;
-            font-size: 1rem;
-            outline: none;
-            resize: vertical;
-        }
-
-        textarea:focus {
-            border-color: var(--lms-primary);
-            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
-        }
-
-        .nav-buttons {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 24px;
-            padding-top: 16px;
-            border-top: 1px solid #e2e8f0;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border-radius: 4px;
-            font-weight: 500;
-            cursor: pointer;
-            border: none;
-            font-size: 0.9rem;
-        }
-
-        .btn-primary {
-            background: var(--lms-primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #0369a1;
-        }
-
-        .btn-secondary {
-            background: #e2e8f0;
-            color: #475569;
-        }
-
-        /* Sidebar Navigation */
-        .sidebar-card {
-            background: white;
-            border: 1px solid var(--card-border);
-            border-radius: 6px;
-            padding: 16px;
-            height: fit-content;
-        }
-
-        .sidebar-title {
-            font-size: 0.9rem;
-            font-weight: 700;
-            margin-bottom: 12px;
-            color: #334155;
-        }
-
-        .q-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
+            font-size: 1.25rem;
+            font-weight: 600;
             margin-bottom: 20px;
+            line-height: 1.5;
         }
 
-        .q-num {
-            aspect-ratio: 1;
-            border: 1px solid #cbd5e1;
-            background: #f8fafc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.85rem;
-            font-weight: 500;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .q-num.active {
-            border: 2px solid var(--lms-primary);
-            font-weight: 700;
-        }
-
-        .q-num.answered {
-            background: #e0f2fe;
-            border-color: #0284c7;
-            color: #0369a1;
-        }
-
-        .timer-box {
-            background: #fff1f2;
-            border: 1px solid #fecdd3;
-            color: #be123c;
-            padding: 10px;
-            text-align: center;
-            border-radius: 4px;
-            font-weight: 700;
-            font-size: 1.1rem;
-            margin-bottom: 16px;
-        }
-
-        /* Results / Motion Screen */
+        /* Results Screen */
         .hidden { display: none !important; }
 
         .result-header {
+            text-align: center;
             background: var(--success-bg);
             border: 1px solid #bbf7d0;
-            padding: 16px;
-            border-radius: 6px;
+            padding: 24px;
+            border-radius: 8px;
             margin-bottom: 24px;
         }
 
-        .result-score {
-            font-size: 1.6rem;
+        .grade-score {
+            font-size: 2.8rem;
             font-weight: 700;
             color: var(--success);
+            margin: 8px 0;
         }
 
-        .reveal-card {
+        .student-meta {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Motion Answer Cards */
+        .reveal-item {
             background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-left: 4px solid var(--success);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
             padding: 16px;
-            border-radius: 4px;
-            margin-bottom: 16px;
+            border-radius: 6px;
+            margin-bottom: 12px;
             opacity: 0;
             transform: translateY(20px);
             transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .reveal-card.show {
+        .reveal-item.show-motion {
             opacity: 1;
             transform: translateY(0);
         }
 
-        .q-label {
+        .q-title-label {
             font-size: 0.85rem;
-            color: #64748b;
+            color: var(--text-muted);
             font-weight: 500;
         }
 
-        .ans-label {
+        .a-text-label {
             font-size: 1.1rem;
             font-weight: 700;
-            color: #0f172a;
+            color: var(--text-dark);
             margin-top: 4px;
         }
 
-        .full-width {
-            grid-column: 1 / -1;
+        /* Loading Screen */
+        .loader-box {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
 
-    <!-- University Header -->
-    <nav class="university-nav">
-        <div class="uni-brand">
-            🎓 UNIVERSITY EXAMINATION PORTAL
-            <span class="uni-badge">LOCKDOWN ACTIVE</span>
+    <!-- Top Navigation Bar -->
+    <nav class="navbar">
+        <div class="brand">
+            🎓 Academic Assessment System
+            <span class="brand-badge">SEB Protected</span>
         </div>
-        <div class="proctor-status">
-            <div class="dot-rec"></div>
-            PROCTORING LIVE (CAM-01)
+        <div class="proctor-badge">
+            <div class="pulse-dot"></div>
+            Proctoring Active
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <div class="main-wrapper">
+    <div class="container">
         
-        <!-- Left Column: Exam Card -->
-        <div class="exam-card" id="quiz-container">
-            <div class="course-title">GEN201: Advanced Logic & Cognitive Evaluation (Attempt 1)</div>
-            <h1 class="exam-header-title">Midterm Examination</h1>
-
-            <div class="question-meta">
-                <span id="q-meta-num">Question 1 of 5</span>
-                <span>Marked out of 2.00 | Flag question</span>
+        <!-- STEP 0: STUDENT LOGIN SCREEN -->
+        <div class="card" id="screen-login">
+            <div style="border-bottom: 2px solid var(--border); padding-bottom: 16px; margin-bottom: 24px;">
+                <h2 style="font-size: 1.4rem;">ระบบการสอบออนไลน์ประจำภาคการศึกษา</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;">กรุณากรอกข้อมูลประจำตัวนิสิต/นักศึกษาเพื่อเริ่มต้นทำข้อสอบแบบจับเวลา</p>
             </div>
 
-            <!-- Question Image Container -->
-            <div class="img-container">
-                <img id="q-img" src="pic1.jpg" alt="Question Image" onerror="handleImageError(this, 'pic1.jpg')">
-            </div>
+            <form onsubmit="startExam(event)">
+                <div class="form-group">
+                    <label for="input-name">ชื่อ - นามสกุล (Full Name):</label>
+                    <input type="text" id="input-name" placeholder="เช่น นายสมชาย ใจดี" required autocomplete="off">
+                </div>
 
-            <!-- Question Text -->
-            <div class="question-text" id="q-text">
-                Who’s actually better than LeBron, tho?
-            </div>
+                <div class="form-group">
+                    <label for="input-id">รหัสประจำตัวนักศึกษา (Student ID):</label>
+                    <input type="text" id="input-id" placeholder="เช่น 6601091234" required autocomplete="off">
+                </div>
 
-            <!-- Answer Box -->
-            <div class="answer-box">
-                <label style="font-size: 0.85rem; color: #64748b; display: block; margin-bottom: 6px;">
-                    Type your official response below:
-                </label>
-                <textarea id="user-ans" placeholder="Enter answer..."></textarea>
-            </div>
+                <div class="form-group" style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
+                    <label style="font-weight: 400; font-size: 0.85rem; color: var(--text-muted); margin: 0; display: flex; gap: 8px; align-items: flex-start;">
+                        <input type="checkbox" required style="margin-top: 3px;">
+                        ข้าพเจ้าขอรับรองว่าจะทำข้อสอบด้วยตนเอง โดยไม่ใช้อุปกรณ์หรือเอกสารช่วยเหลือใดๆ ที่ไม่อนุญาต
+                    </label>
+                </div>
 
-            <div class="nav-buttons">
-                <button class="btn btn-secondary" onclick="prevQuestion()" id="btn-prev" disabled>Previous</button>
-                <button class="btn btn-primary" onclick="nextQuestion()" id="btn-next">Next Page ➔</button>
-            </div>
+                <button type="submit" class="btn">
+                    เริ่มทำข้อสอบ (Start Exam) ➔
+                </button>
+            </form>
         </div>
 
-        <!-- Right Column: Navigation Sidebar -->
-        <div class="sidebar-card" id="sidebar">
-            <div class="sidebar-title">Time Remaining</div>
-            <div class="timer-box" id="timer">00:44:59</div>
-
-            <div class="sidebar-title">Quiz Navigation</div>
-            <div class="q-grid">
-                <div class="q-num active" id="nav-1" onclick="jumpTo(0)">1</div>
-                <div class="q-num" id="nav-2" onclick="jumpTo(1)">2</div>
-                <div class="q-num" id="nav-3" onclick="jumpTo(2)">3</div>
-                <div class="q-num" id="nav-4" onclick="jumpTo(3)">4</div>
-                <div class="q-num" id="nav-5" onclick="jumpTo(4)">5</div>
+        <!-- STEP 1: EXAM SCREEN (ONE BY ONE) -->
+        <div class="card hidden" id="screen-exam">
+            <div class="stepper">
+                <span class="step-info" id="step-counter">QUESTION 1 OF 5</span>
+                <span class="timer" id="timer">14:59</span>
             </div>
 
-            <button class="btn btn-secondary" style="width: 100%; font-size: 0.8rem;" onclick="submitExam()">
-                Finish attempt...
-            </button>
+            <div class="image-frame" id="img-container">
+                <!-- Image rendering area -->
+            </div>
+
+            <div class="question-text" id="question-title">
+                Loading question...
+            </div>
+
+            <form onsubmit="nextQuestion(event)">
+                <div class="form-group">
+                    <label for="user-answer">คำตอบของคุณ (Your Response):</label>
+                    <textarea id="user-answer" placeholder="พิมพ์คำตอบลงในช่องนี้..." required autocomplete="off"></textarea>
+                </div>
+
+                <button type="submit" class="btn" id="btn-submit-step">
+                    ข้อถัดไป (Next Question) ➔
+                </button>
+            </form>
         </div>
 
-        <!-- Results / Motion Screen (Initially Hidden) -->
-        <div class="exam-card full-width hidden" id="result-container">
+        <!-- STEP 2: LOADING SCREEN -->
+        <div class="card hidden loader-box" id="screen-loading">
+            <div class="spinner"></div>
+            <h3>กำลังบันทึกและตรวจผลคะแนน...</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 8px;">Encrypting responses & generating final transcript</p>
+        </div>
+
+        <!-- STEP 3: RESULTS & MOTION REVEAL SCREEN -->
+        <div class="card hidden" id="screen-result">
             <div class="result-header">
-                <div style="font-size: 0.9rem; color: #166534; font-weight: 500;">SUBMISSION RECEIVED & GRADED</div>
-                <div class="result-score">Grade: 10.00 out of 10.00 (100%)</div>
-                <div style="font-size: 0.85rem; color: #15803d; margin-top: 4px;">Status: Finished | Feedback: Outstanding Logic.</div>
+                <div style="font-size: 0.85rem; font-weight: 600; color: #166534; text-transform: uppercase;">Official Evaluation Report</div>
+                <div class="grade-score">10.00 / 10.00</div>
+                <div style="font-size: 0.95rem; color: var(--success); font-weight: 600;">Status: PASSED (100% Correct)</div>
             </div>
 
-            <!-- Result Main Image -->
-            <div class="img-container" style="max-height: 380px; margin-bottom: 24px;">
-                <img src="ans.jpg" alt="Final Result Image" onerror="handleImageError(this, 'ans.jpg')">
+            <div class="student-meta">
+                <span><strong>Candidate:</strong> <span id="res-student-name">-</span></span>
+                <span><strong>ID:</strong> <span id="res-student-id">-</span></span>
             </div>
 
-            <h3 style="margin-bottom: 16px; color: #0f172a;">Official Model Solutions (Answer Key):</h3>
-            
-            <div id="reveal-list">
-                <!-- Answer items will animate here -->
+            <!-- Final Result Image (ans.jpg) -->
+            <div class="image-frame" style="height: 320px; margin-bottom: 24px;">
+                <img src="ans.jpg" alt="Final Answer Key" onerror="handleImageError(this, 'ans.jpg')">
+            </div>
+
+            <h3 style="font-size: 1.1rem; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                เฉลยคำตอบอย่างเป็นทางการ (Official Model Answers):
+            </h3>
+
+            <div id="answers-motion-list">
+                <!-- Motion items rendered by JS -->
             </div>
         </div>
 
     </div>
 
     <script>
-        // Questions & Agreed Answers Data
-        const examQuestions = [
+        // Quiz Data
+        const quizList = [
             {
-                num: 1,
                 q: "1. Who’s actually better than LeBron, tho?",
                 img: "pic1.jpg",
-                modelAns: "Me. 💀"
+                realAns: "Me. 💀"
             },
             {
-                num: 2,
                 q: "2. Who’s the smartest person alive, fr?",
                 img: "pic2.jpg",
-                modelAns: "IDK."
+                realAns: "IDK."
             },
             {
-                num: 3,
                 q: "3. Who decided pineapple belongs on pizza, tho?",
                 img: "pic3.jpg",
-                modelAns: "Everyone except me and Italians. 💀"
+                realAns: "Everyone except me and Italians. 💀"
             },
             {
-                num: 4,
                 q: "4. Yo, you ever eat a hot dog?",
                 img: "pic4.jpg",
-                modelAns: "Nah, I’ve never eaten a "
+                realAns: "Nah, I’ve never eaten a "
             },
             {
-                num: 5,
                 q: "5. Aight, who’s better, Ronaldo or Messi?",
                 img: "pic5.jpg",
-                modelAns: "Me. 🐐"
+                realAns: "Me. 🐐"
             }
         ];
 
         let currentIdx = 0;
-        let userAnswers = ["", "", "", "", ""];
+        let studentName = "";
+        let studentId = "";
+        let timerInterval;
+        let timeLeft = 900; // 15 mins
 
-        // Smart image fallback handler
+        // Image error fallback handler (Creates modern placeholder if image doesn't exist)
         function handleImageError(imgEl, filename) {
-            const parent = imgEl.parentElement;
-            parent.innerHTML = `
-                <div class="img-fallback">
-                    📷 <strong>[Image Attachment: ${filename}]</strong><br>
-                    <span style="font-size: 0.75rem;">(Place '${filename}' in the same folder to view full image)</span>
+            const container = imgEl.parentElement;
+            container.innerHTML = `
+                <div class="fallback-box">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <div style="font-weight: 600; font-size: 0.95rem;">[ Attached File: ${filename} ]</div>
+                    <div style="font-size: 0.75rem; margin-top: 4px;">นำไฟล์ '${filename}' วางในโฟลเดอร์เดียวกันเพื่อแสดงภาพ</div>
                 </div>
             `;
         }
 
-        function loadQuestion(idx) {
-            const q = examQuestions[idx];
-            document.getElementById('q-meta-num').innerText = `Question ${q.num} of 5`;
-            document.getElementById('q-text').innerText = q.q;
-            document.getElementById('user-ans').value = userAnswers[idx];
+        function startExam(e) {
+            e.preventDefault();
+            studentName = document.getElementById('input-name').value.trim();
+            studentId = document.getElementById('input-id').value.trim();
 
-            // Image reload handling
-            const imgContainer = document.querySelector('.img-container');
-            imgContainer.innerHTML = `<img id="q-img" src="${q.img}" alt="Question Image" onerror="handleImageError(this, '${q.img}')">`;
+            if(!studentName || !studentId) return;
 
-            // Navigation UI update
-            for(let i=1; i<=5; i++) {
-                const navEl = document.getElementById(`nav-${i}`);
-                navEl.classList.remove('active');
-                if(i - 1 === idx) navEl.classList.add('active');
-            }
+            document.getElementById('screen-login').classList.add('hidden');
+            document.getElementById('screen-exam').classList.remove('hidden');
 
-            // Button status
-            document.getElementById('btn-prev').disabled = (idx === 0);
-            if(idx === 4) {
-                document.getElementById('btn-next').innerText = "Submit Exam ➔";
-                document.getElementById('btn-next').style.background = "#16a34a";
+            startTimer();
+            renderStep();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                const s = (timeLeft % 60).toString().padStart(2, '0');
+                document.getElementById('timer').innerText = `${m}:${s}`;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    finishExam();
+                }
+            }, 1000);
+        }
+
+        function renderStep() {
+            const data = quizList[currentIdx];
+            
+            document.getElementById('step-counter').innerText = `QUESTION ${currentIdx + 1} OF ${quizList.length}`;
+            document.getElementById('question-title').innerText = data.q;
+            document.getElementById('user-answer').value = '';
+
+            // Load Image with Fallback
+            const imgContainer = document.getElementById('img-container');
+            imgContainer.innerHTML = `<img src="${data.img}" alt="Question Image" onerror="handleImageError(this, '${data.img}')">`;
+
+            // Button text update
+            const btn = document.getElementById('btn-submit-step');
+            if(currentIdx === quizList.length - 1) {
+                btn.innerText = "ส่งข้อสอบ (Submit Exam) 🚀";
+                btn.style.background = "#16a34a";
             } else {
-                document.getElementById('btn-next').innerText = "Next Page ➔";
-                document.getElementById('btn-next').style.background = "#0284c7";
+                btn.innerText = "ข้อถัดไป (Next Question) ➔";
+                btn.style.background = "#0284c7";
             }
         }
 
-        function saveCurrentAnswer() {
-            userAnswers[currentIdx] = document.getElementById('user-ans').value;
-            if(userAnswers[currentIdx].trim() !== "") {
-                document.getElementById(`nav-${currentIdx+1}`).classList.add('answered');
-            }
-        }
-
-        function nextQuestion() {
-            saveCurrentAnswer();
-            if(currentIdx < 4) {
+        function nextQuestion(e) {
+            e.preventDefault();
+            
+            if(currentIdx < quizList.length - 1) {
                 currentIdx++;
-                loadQuestion(currentIdx);
+                renderStep();
             } else {
-                submitExam();
+                clearInterval(timerInterval);
+                finishExam();
             }
         }
 
-        function prevQuestion() {
-            saveCurrentAnswer();
-            if(currentIdx > 0) {
-                currentIdx--;
-                loadQuestion(currentIdx);
-            }
+        function finishExam() {
+            document.getElementById('screen-exam').classList.add('hidden');
+            document.getElementById('screen-loading').classList.remove('hidden');
+
+            setTimeout(() => {
+                document.getElementById('screen-loading').classList.add('hidden');
+                showResults();
+            }, 2000);
         }
 
-        function jumpTo(idx) {
-            saveCurrentAnswer();
-            currentIdx = idx;
-            loadQuestion(currentIdx);
-        }
+        function showResults() {
+            document.getElementById('screen-result').classList.remove('hidden');
+            document.getElementById('res-student-name').innerText = studentName;
+            document.getElementById('res-student-id').innerText = studentId;
 
-        function submitExam() {
-            saveCurrentAnswer();
-            
-            // Hide exam UI & sidebar
-            document.getElementById('quiz-container').classList.add('hidden');
-            document.getElementById('sidebar').classList.add('hidden');
-            
-            // Show result screen
-            const resContainer = document.getElementById('result-container');
-            resContainer.classList.remove('hidden');
+            const listContainer = document.getElementById('answers-motion-list');
+            listContainer.innerHTML = '';
 
-            // Render sequential reveal with motion
-            const revealList = document.getElementById('reveal-list');
-            examQuestions.forEach((q, i) => {
-                const card = document.createElement('div');
-                card.className = 'reveal-card';
-                card.innerHTML = `
-                    <div class="q-label">${q.q}</div>
-                    <div class="ans-label">➔ Official Answer: ${q.modelAns}</div>
+            // Render Answers with Sequential Motion Delay
+            quizList.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'reveal-item';
+                el.innerHTML = `
+                    <div class="q-title-label">${item.q}</div>
+                    <div class="a-text-label">➔ ${item.realAns}</div>
                 `;
-                revealList.appendChild(card);
+                listContainer.appendChild(el);
 
-                // Sequential Motion Delay
+                // Motion Animation trigger
                 setTimeout(() => {
-                    card.classList.add('show');
-                }, 300 + (i * 350));
+                    el.classList.add('show-motion');
+                }, 300 + (index * 400));
             });
         }
-
-        // Timer Simulation
-        let totalSeconds = 2700;
-        setInterval(() => {
-            if(totalSeconds > 0) {
-                totalSeconds--;
-                const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
-                const s = (totalSeconds % 60).toString().padStart(2, '0');
-                document.getElementById('timer').innerText = `00:${m}:${s}`;
-            }
-        }, 1000);
-
-        // Initial Load
-        loadQuestion(0);
     </script>
 </body>
 </html>
