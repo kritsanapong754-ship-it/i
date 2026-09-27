@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart LMS - Official Examination Portal</title>
+    <title>Academic Examination System - Official Portal</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -27,7 +27,7 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Prompt', 'Sarabun', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         body {
@@ -38,42 +38,45 @@
             flex-direction: column;
         }
 
-        /* Top University Navbar */
+        /* University Navigation Header */
         .navbar {
-            background: #1e293b;
+            background: #0f172a;
             color: white;
-            padding: 12px 24px;
+            padding: 14px 28px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
 
         .brand {
             display: flex;
             align-items: center;
             gap: 12px;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 1.1rem;
+            letter-spacing: -0.3px;
         }
 
         .brand-badge {
-            background: #0284c7;
+            background: var(--primary);
             color: white;
             font-size: 0.75rem;
-            padding: 2px 8px;
+            padding: 3px 8px;
             border-radius: 4px;
-            font-weight: 500;
+            font-weight: 600;
+            text-transform: uppercase;
         }
 
         .proctor-badge {
             display: flex;
             align-items: center;
             gap: 8px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.08);
             padding: 6px 14px;
             border-radius: 20px;
             font-size: 0.85rem;
+            color: #cbd5e1;
         }
 
         .pulse-dot {
@@ -86,15 +89,15 @@
 
         @keyframes pulse {
             0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(1.2); }
+            50% { opacity: 0.3; transform: scale(1.2); }
             100% { opacity: 1; transform: scale(1); }
         }
 
         /* Container Layout */
         .container {
-            max-width: 800px;
+            max-width: 820px;
             width: 100%;
-            margin: 30px auto;
+            margin: 36px auto;
             padding: 0 20px;
             flex: 1;
         }
@@ -103,14 +106,14 @@
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 32px;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -4px rgba(0,0,0,0.02);
+            padding: 36px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
             position: relative;
         }
 
         /* Form Controls */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
 
         label {
@@ -123,10 +126,10 @@
 
         input[type="text"], textarea {
             width: 100%;
-            padding: 12px 16px;
+            padding: 14px 16px;
             border: 1.5px solid var(--border);
             border-radius: 8px;
-            font-size: 1rem;
+            font-size: 0.98rem;
             transition: all 0.2s;
             outline: none;
             background: #f8fafc;
@@ -140,12 +143,12 @@
 
         textarea {
             resize: vertical;
-            min-height: 100px;
+            min-height: 110px;
         }
 
         .btn {
             width: 100%;
-            padding: 14px;
+            padding: 15px;
             background: var(--primary);
             color: white;
             border: none;
@@ -153,7 +156,7 @@
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background 0.2s, transform 0.1s;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -164,7 +167,11 @@
             background: var(--primary-dark);
         }
 
-        /* Stepper Progress Bar */
+        .btn:active {
+            transform: scale(0.99);
+        }
+
+        /* Stepper & Header */
         .stepper {
             display: flex;
             justify-content: space-between;
@@ -176,9 +183,8 @@
 
         .step-info {
             font-size: 0.85rem;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--text-muted);
-            text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
@@ -193,19 +199,18 @@
             border: 1px solid #fecdd3;
         }
 
-        /* Image Display Frame with Smart Fallback */
+        /* Image Display Frame with Fallback */
         .image-frame {
             width: 100%;
-            height: 280px;
+            height: 300px;
             background: #0f172a;
             border-radius: 8px;
             overflow: hidden;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
             border: 1px solid var(--border);
-            position: relative;
         }
 
         .image-frame img {
@@ -217,22 +222,23 @@
         .fallback-box {
             color: #94a3b8;
             text-align: center;
-            padding: 20px;
+            padding: 24px;
         }
 
         .fallback-box svg {
             width: 48px;
             height: 48px;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             stroke: #64748b;
         }
 
         /* Question Typography */
         .question-text {
-            font-size: 1.25rem;
-            font-weight: 600;
+            font-size: 1.3rem;
+            font-weight: 700;
             margin-bottom: 20px;
-            line-height: 1.5;
+            line-height: 1.4;
+            color: #0f172a;
         }
 
         /* Results Screen */
@@ -242,24 +248,25 @@
             text-align: center;
             background: var(--success-bg);
             border: 1px solid #bbf7d0;
-            padding: 24px;
-            border-radius: 8px;
+            padding: 28px;
+            border-radius: 10px;
             margin-bottom: 24px;
         }
 
         .grade-score {
-            font-size: 2.8rem;
-            font-weight: 700;
+            font-size: 3rem;
+            font-weight: 800;
             color: var(--success);
             margin: 8px 0;
+            letter-spacing: -1px;
         }
 
         .student-meta {
             font-size: 0.9rem;
             color: var(--text-muted);
             border-bottom: 1px solid var(--border);
-            padding-bottom: 12px;
-            margin-bottom: 20px;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
             display: flex;
             justify-content: space-between;
         }
@@ -269,9 +276,9 @@
             background: #f8fafc;
             border: 1px solid var(--border);
             border-left: 4px solid var(--primary);
-            padding: 16px;
+            padding: 18px;
             border-radius: 6px;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
             opacity: 0;
             transform: translateY(20px);
             transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
@@ -289,26 +296,26 @@
         }
 
         .a-text-label {
-            font-size: 1.1rem;
+            font-size: 1.15rem;
             font-weight: 700;
             color: var(--text-dark);
-            margin-top: 4px;
+            margin-top: 6px;
         }
 
         /* Loading Screen */
         .loader-box {
             text-align: center;
-            padding: 40px 0;
+            padding: 50px 0;
         }
 
         .spinner {
-            width: 48px;
-            height: 48px;
+            width: 50px;
+            height: 50px;
             border: 4px solid var(--border);
             border-top: 4px solid var(--primary);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
-            margin: 0 auto 16px;
+            margin: 0 auto 20px;
         }
 
         @keyframes spin {
@@ -322,49 +329,49 @@
     <!-- Top Navigation Bar -->
     <nav class="navbar">
         <div class="brand">
-            🎓 Academic Assessment System
-            <span class="brand-badge">SEB Protected</span>
+            🎓 ACADEMIC ASSESSMENT PORTAL
+            <span class="brand-badge">LockDown Browser</span>
         </div>
         <div class="proctor-badge">
             <div class="pulse-dot"></div>
-            Proctoring Active
+            Live Proctoring Active
         </div>
     </nav>
 
     <div class="container">
         
-        <!-- STEP 0: STUDENT LOGIN SCREEN -->
+        <!-- SCREEN 0: STUDENT LOGIN SCREEN -->
         <div class="card" id="screen-login">
-            <div style="border-bottom: 2px solid var(--border); padding-bottom: 16px; margin-bottom: 24px;">
-                <h2 style="font-size: 1.4rem;">ระบบการสอบออนไลน์ประจำภาคการศึกษา</h2>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;">กรุณากรอกข้อมูลประจำตัวนิสิต/นักศึกษาเพื่อเริ่มต้นทำข้อสอบแบบจับเวลา</p>
+            <div style="border-bottom: 2px solid var(--border); padding-bottom: 18px; margin-bottom: 28px;">
+                <h2 style="font-size: 1.5rem; font-weight: 700;">Official Examination Authentication</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;">Please provide your candidate credentials to initialize the timed session.</p>
             </div>
 
             <form onsubmit="startExam(event)">
                 <div class="form-group">
-                    <label for="input-name">ชื่อ - นามสกุล (Full Name):</label>
-                    <input type="text" id="input-name" placeholder="เช่น นายสมชาย ใจดี" required autocomplete="off">
+                    <label for="input-name">Candidate Full Name:</label>
+                    <input type="text" id="input-name" placeholder="e.g. Alex Mercer" required autocomplete="off">
                 </div>
 
                 <div class="form-group">
-                    <label for="input-id">รหัสประจำตัวนักศึกษา (Student ID):</label>
-                    <input type="text" id="input-id" placeholder="เช่น 6601091234" required autocomplete="off">
+                    <label for="input-id">Student Registration ID:</label>
+                    <input type="text" id="input-id" placeholder="e.g. 6601091234" required autocomplete="off">
                 </div>
 
-                <div class="form-group" style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">
-                    <label style="font-weight: 400; font-size: 0.85rem; color: var(--text-muted); margin: 0; display: flex; gap: 8px; align-items: flex-start;">
+                <div class="form-group" style="background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid var(--border);">
+                    <label style="font-weight: 400; font-size: 0.85rem; color: var(--text-muted); margin: 0; display: flex; gap: 10px; align-items: flex-start; cursor: pointer;">
                         <input type="checkbox" required style="margin-top: 3px;">
-                        ข้าพเจ้าขอรับรองว่าจะทำข้อสอบด้วยตนเอง โดยไม่ใช้อุปกรณ์หรือเอกสารช่วยเหลือใดๆ ที่ไม่อนุญาต
+                        I hereby certify that I will complete this examination independently without unauthorized assistance or forbidden external resources.
                     </label>
                 </div>
 
                 <button type="submit" class="btn">
-                    เริ่มทำข้อสอบ (Start Exam) ➔
+                    Begin Examination ➔
                 </button>
             </form>
         </div>
 
-        <!-- STEP 1: EXAM SCREEN (ONE BY ONE) -->
+        <!-- SCREEN 1: EXAM QUESTIONS (ONE BY ONE) -->
         <div class="card hidden" id="screen-exam">
             <div class="stepper">
                 <span class="step-info" id="step-counter">QUESTION 1 OF 5</span>
@@ -372,7 +379,7 @@
             </div>
 
             <div class="image-frame" id="img-container">
-                <!-- Image rendering area -->
+                <!-- Image rendering frame -->
             </div>
 
             <div class="question-text" id="question-title">
@@ -381,54 +388,54 @@
 
             <form onsubmit="nextQuestion(event)">
                 <div class="form-group">
-                    <label for="user-answer">คำตอบของคุณ (Your Response):</label>
-                    <textarea id="user-answer" placeholder="พิมพ์คำตอบลงในช่องนี้..." required autocomplete="off"></textarea>
+                    <label for="user-answer">Your Official Response:</label>
+                    <textarea id="user-answer" placeholder="Type your answer here..." required autocomplete="off"></textarea>
                 </div>
 
                 <button type="submit" class="btn" id="btn-submit-step">
-                    ข้อถัดไป (Next Question) ➔
+                    Next Question ➔
                 </button>
             </form>
         </div>
 
-        <!-- STEP 2: LOADING SCREEN -->
+        <!-- SCREEN 2: LOADING & GRADING -->
         <div class="card hidden loader-box" id="screen-loading">
             <div class="spinner"></div>
-            <h3>กำลังบันทึกและตรวจผลคะแนน...</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 8px;">Encrypting responses & generating final transcript</p>
+            <h3 style="font-size: 1.2rem; font-weight: 700;">Encrypting & Grading Assessment...</h3>
+            <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 6px;">Generating official evaluation report and transcript</p>
         </div>
 
-        <!-- STEP 3: RESULTS & MOTION REVEAL SCREEN -->
+        <!-- SCREEN 3: RESULTS & MOTION REVEAL SCREEN -->
         <div class="card hidden" id="screen-result">
             <div class="result-header">
-                <div style="font-size: 0.85rem; font-weight: 600; color: #166534; text-transform: uppercase;">Official Evaluation Report</div>
+                <div style="font-size: 0.85rem; font-weight: 700; color: #166534; text-transform: uppercase; letter-spacing: 0.5px;">Final Evaluation Result</div>
                 <div class="grade-score">10.00 / 10.00</div>
-                <div style="font-size: 0.95rem; color: var(--success); font-weight: 600;">Status: PASSED (100% Correct)</div>
+                <div style="font-size: 0.95rem; color: var(--success); font-weight: 700;">Status: PASSED (100% Score)</div>
             </div>
 
             <div class="student-meta">
-                <span><strong>Candidate:</strong> <span id="res-student-name">-</span></span>
-                <span><strong>ID:</strong> <span id="res-student-id">-</span></span>
+                <span><strong>Candidate Name:</strong> <span id="res-student-name">-</span></span>
+                <span><strong>Student ID:</strong> <span id="res-student-id">-</span></span>
             </div>
 
             <!-- Final Result Image (ans.jpg) -->
-            <div class="image-frame" style="height: 320px; margin-bottom: 24px;">
+            <div class="image-frame" style="height: 320px; margin-bottom: 28px;">
                 <img src="ans.jpg" alt="Final Answer Key" onerror="handleImageError(this, 'ans.jpg')">
             </div>
 
-            <h3 style="font-size: 1.1rem; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
-                เฉลยคำตอบอย่างเป็นทางการ (Official Model Answers):
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                Official Model Solutions (Answer Key):
             </h3>
 
             <div id="answers-motion-list">
-                <!-- Motion items rendered by JS -->
+                <!-- Animated items inserted by JS -->
             </div>
         </div>
 
     </div>
 
     <script>
-        // Quiz Data
+        // Questions & Agreed Answers Data
         const quizList = [
             {
                 q: "1. Who’s actually better than LeBron, tho?",
@@ -463,7 +470,7 @@
         let timerInterval;
         let timeLeft = 900; // 15 mins
 
-        // Image error fallback handler (Creates modern placeholder if image doesn't exist)
+        // Smart image fallback handler
         function handleImageError(imgEl, filename) {
             const container = imgEl.parentElement;
             container.innerHTML = `
@@ -471,8 +478,8 @@
                     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                     </svg>
-                    <div style="font-weight: 600; font-size: 0.95rem;">[ Attached File: ${filename} ]</div>
-                    <div style="font-size: 0.75rem; margin-top: 4px;">นำไฟล์ '${filename}' วางในโฟลเดอร์เดียวกันเพื่อแสดงภาพ</div>
+                    <div style="font-weight: 600; font-size: 0.95rem;">[ Image Attachment: ${filename} ]</div>
+                    <div style="font-size: 0.78rem; margin-top: 4px;">Place '${filename}' in the same directory to display full visual</div>
                 </div>
             `;
         }
@@ -515,13 +522,13 @@
             const imgContainer = document.getElementById('img-container');
             imgContainer.innerHTML = `<img src="${data.img}" alt="Question Image" onerror="handleImageError(this, '${data.img}')">`;
 
-            // Button text update
+            // Button label logic
             const btn = document.getElementById('btn-submit-step');
             if(currentIdx === quizList.length - 1) {
-                btn.innerText = "ส่งข้อสอบ (Submit Exam) 🚀";
+                btn.innerText = "Submit Examination 🚀";
                 btn.style.background = "#16a34a";
             } else {
-                btn.innerText = "ข้อถัดไป (Next Question) ➔";
+                btn.innerText = "Next Question ➔";
                 btn.style.background = "#0284c7";
             }
         }
@@ -545,7 +552,7 @@
             setTimeout(() => {
                 document.getElementById('screen-loading').classList.add('hidden');
                 showResults();
-            }, 2000);
+            }, 1800);
         }
 
         function showResults() {
@@ -566,7 +573,7 @@
                 `;
                 listContainer.appendChild(el);
 
-                // Motion Animation trigger
+                // Sequential motion animation
                 setTimeout(() => {
                     el.classList.add('show-motion');
                 }, 300 + (index * 400));
